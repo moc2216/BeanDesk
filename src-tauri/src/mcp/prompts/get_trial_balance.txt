@@ -1,0 +1,1 @@
+Read the trial balance from the configured Fava.

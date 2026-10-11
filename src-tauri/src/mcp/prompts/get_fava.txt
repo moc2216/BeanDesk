@@ -1,0 +1,1 @@
+See whether the configured Fava is answering and which ledger slug it uses.

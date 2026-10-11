@@ -1,0 +1,1 @@
+Read the balance sheet from the configured Fava.

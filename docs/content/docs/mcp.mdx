@@ -1,0 +1,21 @@
+---
+title: Local MCP
+description: Read-only ledger queries and handbook integration via Model Context Protocol.
+---
+
+BeanDesk operates as a standard stdio MCP server. In Settings → General, click Copy Config to integrate command configurations into Cursor, Claude Desktop, or other local MCP hosts that can write the ledger work folder. Only a local client that can write the work folder can post entries. A cloud chat that only accepts dropped images cannot.
+
+## Operating Principles
+
+- Shared Configuration: Automatically resolves the ledger working directory and active Fava address configured in Settings, eliminating the need to hardcode paths in AI prompts.
+- Card language: `displayBlock` follows the ready pack in `.beandesk` (`zh-CN` or `en`). `init_ledger` and `upgrade_ledger` use the request `locale`. A missing or reserved marker stays English. The OS language is not used. `get_handbook` still takes its own `locale`.
+- Read-Only Forwarding: Ledger tools forward read-only requests. If the underlying service is offline, tools return a descriptive status error rather than spawning processes in the background.
+- Ledger Entries: Creating and editing transactions is handled by a local agent that can write monthly `.bean` files under the work folder; MCP does not expose entry write endpoints.
+- Local vs cloud: Cloud-hosted models send invoices in the conversation off this machine. Invoices stay local only when both the model and the client that writes the work folder run on this computer.
+
+## Tool Capabilities
+
+- Ledger Services: Provides working directory identification, read-only financial statements, native BQL queries, document listing, and syntax checking. Supports initializing a new ledger skeleton upon explicit write confirmation (`confirmWrite`). `locale` is required: `zh-CN` (CNY Chinese) or `en` (USD English). It must not be omitted and is never inferred from the OS language. Other country codes are reserved in the parameter table and rejected until a pack is merged. `upgrade_ledger` uses the same confirmation and `locale` to adopt an existing Beancount folder or upgrade an older BeanDesk skeleton; it only adds missing `policies/base` files and never rewrites `data/` entries. It exposes no transaction write endpoints or background process supervision. `check_ledger` verifies syntax and balance via `bean-check`, then applies the bundled locale pack plus last-approved custom TOML stored in BeanDesk (live disk files are not the execution source). MCP can seed via `init_ledger` / `upgrade_ledger` but cannot approve, revert, or switch locale. Successful verification confirms format compliance and does not constitute a formal tax opinion.
+- Offline Handbook: `get_handbook` provides offline access to bundled product documentation (UI navigation, backups, calendar feeds, and reports) without network access. Optional `locale` accepts `zh-CN` or `en` (defaults to `en` when omitted or unrecognized).
+- Work-folder policies: `list_policies` and `get_policy` discover and read business guidance under `policies/` (including the initialized `base/` baseline); automated TOML compliance rules are evaluated directly by `check_ledger` rather than returned as reading text.
+- Security Boundaries: Protects sensitive local state; does not expose backup passphrases, raw document bytes, or private calendar subscription URLs.

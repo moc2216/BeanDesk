@@ -1,0 +1,31 @@
+---
+title: First book
+description: Initialize a new ledger in an empty directory and configure backups.
+---
+
+## 1. Select an Empty Directory
+
+In Settings → Ledger Connection, choose an empty directory. To prevent overwriting existing files, initialization aborts if the selected directory is not empty.
+
+## 2. Initialize Ledger
+
+Click Initialize Ledger. A dialog asks for the locale pack and operating currency (default Simplified Chinese / CNY). After confirm, BeanDesk writes the standard Beancount directory structure (`main.bean`, `config/`, `data/`, `documents/`, and `policies/base/`) alongside a versioned `.beandesk` marker. This matches MCP `init_ledger`: `locale` must be explicit (`zh-CN` or `en`); currency comes with the pack. An older BeanDesk folder with a v1 marker is offered Upgrade ledger skeleton on this page, with the same dialog; that only fills missing `policies/base` files and never rewrites `data/` entries.
+
+Subsequent bookkeeping is performed by editing monthly `.bean` files under `data/` in your preferred text editor. BeanDesk provides read-only financial reporting.
+
+## 3. Connect Service
+
+In Ledger Connection, click Connect. The default mode uses the bundled engine. If the folder is still empty, Connect opens the same locale dialog instead of writing a default pack. You can also switch to an external command or connect directly to an existing service origin. If a session is currently active, switching modes disconnects the active session first.
+
+## 4. Configure Backups
+
+In Settings → Backup, configure dual local backup protections:
+
+- Git Auto-Snapshot: Watches core ledger files (`main.bean`, `config/`, `data/`, and `policies/`). Takes an initial snapshot when watching begins, then creates local commits with debounce upon file modifications. Commits remain strictly local; credentials and receipt files are excluded from Git and never pushed.
+- restic Encrypted Backup: Client-side encrypted incremental backups to local folders or S3-compatible buckets, covering the ledger, `documents/` receipts, and `policies/`.
+  - Passphrase: Setting a passphrase requires confirmation; a lost passphrase cannot decrypt historical archives.
+  - Backup Now: Manually triggers an on-demand incremental backup.
+  - Automatic Backup: When enabled, file changes automatically sync to all ready destinations.
+  - Retention Policy: Keeps all snapshots from the past 48 hours, then thins older snapshots to daily for 30 days, weekly for 12 weeks, and monthly for 24 months. Unchanged ledgers are skipped.
+
+Next: [Settings](/desktop) and [Reports](/reports).

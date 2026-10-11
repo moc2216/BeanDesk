@@ -1,0 +1,39 @@
+---
+title: Settings
+description: Ledger connection, service supervision, backups, and app preferences.
+---
+
+## Ledger Connection Modes
+
+Settings provides three mutually exclusive connection modes, sharing a unified activity log:
+
+- Bundled Engine: Specify your ledger working directory to launch via the bundled standalone engine, requiring no Python environment or manual commands. Empty folders are initialized through the language and currency dialog (Initialize Ledger, or Connect on an empty folder). Connecting never writes a pack on its own. The local address defaults to `http://127.0.0.1:5000`; you can change the loopback port.
+- External Command: Specify a directory, start command, and local origin. Probes the port first, attaching directly if a local Fava service is already running; otherwise spawns the command in an isolated process group.
+- Direct Address: Provide an existing Fava service URL (local or remote) without managing background processes.
+
+If a session is active, switching modes requires confirmation and disconnects the active session first. Clicking Stop terminates only the process group launched by the current window, leaving external services intact.
+
+## Settings Tabs
+
+- General: Language preference, appearance theme (light, dark, or system), and local MCP configuration.
+- Ledger Connection: Working directory picker, connection mode switcher, supervision controls, and Switch language pack (writes `.beandesk` and `policies/base/rules.toml` together; approved custom rules are kept).
+- Backup: Local Git snapshots and restic encrypted backups (available after Initialize Ledger, Upgrade, or Adopt as standard ledger; see [First book](/setup/first-book) and [Existing Beancount](/setup/existing)). Restoring a ledger does not restore BeanDesk's `policy.json`; review and approve or revert policies in the main window.
+- About: App name, software updates, and license.
+
+## Connection Logs
+
+Connection events are recorded to local log files (10 MB cap; oldest lines are dropped from the start of the file). Clear resets only the on-screen log view without affecting disk logs.
+
+Output from the bundled engine is also written to the same log file.
+
+## Handbook Window
+
+Clicking the book icon in the header opens this manual in a dedicated secondary window. The handbook window stays available; closing it only hides it, and opening it again shows it immediately.
+
+## System Tray and Background Presence
+
+Closing the main or handbook window hides the application to the system tray while keeping background processes and watch listeners active. Click the tray icon or choose Show to focus the main window. Choosing Quit from the tray exits the application completely and terminates any Fava process group started by this window. Launching the desktop app again brings the running instance to the foreground.
+
+## Software Updates
+
+Check for updates from Settings → About. Available on macOS, Windows, and Linux.

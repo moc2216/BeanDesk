@@ -1,0 +1,15 @@
+{
+  "title": "Handbook",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "...setup",
+    "---Core Features---",
+    "reports",
+    "bookkeeping",
+    "desktop",
+    "calendar",
+    "---Integrations---",
+    "mcp"
+  ]
+}

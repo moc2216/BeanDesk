@@ -1,0 +1,365 @@
+/**
+ * Native Fava API and BQL client.
+ *
+ * In the browser the prefix is `/api/fava`, which Vite or Caddy proxies to
+ * Fava. The desktop shell sets a direct origin and sends those requests
+ * through the Tauri HTTP plugin. The slug comes from `public/config.js` when
+ * set. Otherwise the client probes the default slug and then the redirect
+ * Fava sends from its root. A later 404 on a discovered slug drops the cache
+ * and follows that redirect once more; a slug pinned in config.js does not.
+ */
+
+import { apiUrl, readLedgerSlug } from './config'
+import { FAVA_LEDGER_DATA, FAVA_SLUG, FAVA_UNREACHABLE } from './fava-error'
+import { assembleJournalRows, journalQuery, type JournalPage } from './journal'
+import {
+  operatingCurrency,
+  quoteCommodity,
+  responseLooksLikeFava,
+  slugFromRedirectUrl,
+} from './ledger-model'
+
+/** AirPlay Receiver listens on every interface. A local Fava can still bind 127.0.0.1. */
+export function isAirPlayServer(server: string): boolean {
+  const name = server.toLowerCase()
+  return name.includes('airtunes') || name.includes('airplay')
+}
+
+export interface FavaAccountDetail {
+  meta?: Record<string, unknown>
+}
+
+export interface FavaLedgerData {
+  accounts: string[]
+  /** Open-directive metadata, keyed by account. */
+  account_details?: Record<string, FavaAccountDetail>
+  currencies: string[]
+  currency_names: Record<string, string>
+  errors: Array<{ message: string; source?: { filename: string; lineno: number } }>
+  options: {
+    title: string
+    operating_currency: string[]
+    documents?: string[]
+    name_assets?: string
+    name_liabilities?: string
+    name_equity?: string
+    name_income?: string
+    name_expenses?: string
+  }
+  tags: string[]
+  payees: string[]
+  years: Array<number | string>
+}
+
+export interface BQLQueryResult {
+  types: Array<{ name: string; dtype: string }>
+  rows: unknown[][]
+}
+
+export interface PostingItem {
+  account: string
+  amount: number
+  currency: string
+}
+
+export interface LedgerDocument {
+  filename: string
+  account: string
+  date: string
+}
+
+export interface TransactionEntry {
+  id: string
+  date: string
+  flag: string
+  payee: string
+  narration: string
+  postings: PostingItem[]
+  tags: string[]
+  links: string[]
+}
+
+const DEFAULT_SLUG = 'beancount'
+
+export type OriginProbe =
+  | { kind: 'fava' }
+  | { kind: 'closed' }
+  | { kind: 'occupied'; server: string }
+
+export class FavaClient {
+  private slug: string | null = null
+  private slugResolved = false
+  private inflightLedger: Promise<FavaLedgerData> | null = null
+  private directOrigin: string | null = null
+
+  /** Desktop shell only. Browser calls keep the `/api/fava` prefix. */
+  useOrigin(origin: string | null) {
+    this.directOrigin = origin
+    this.slug = null
+    this.slugResolved = false
+    this.inflightLedger = null
+  }
+
+  origin(): string | null {
+    return this.directOrigin
+  }
+
+  getSlug() {
+    return this.slug ?? (readLedgerSlug() || DEFAULT_SLUG)
+  }
+
+  private prefix(): string {
+    return this.directOrigin ?? apiUrl('/api/fava')
+  }
+
+  /**
+   * Distinguish a Fava redirect from a closed port and from another program
+   * that merely answers HTTP. macOS AirPlay Receiver answers on port 5000
+   * until a program binds 127.0.0.1:5000 itself.
+   */
+  async probe(): Promise<OriginProbe> {
+    let response: Response
+    try {
+      response = await this.request(`${this.prefix()}/`, { maxRedirections: 0 })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.toLowerCase().includes('not allowed')) throw error
+      return { kind: 'closed' }
+    }
+    const server = response.headers.get('server') ?? ''
+    const fava =
+      response.status !== 0 &&
+      responseLooksLikeFava(response.status, response.url || `${this.prefix()}/`, response.headers.get('location'))
+    await response.arrayBuffer().catch(() => undefined)
+    if (fava) return { kind: 'fava' }
+    if (response.status === 0) return { kind: 'closed' }
+    return { kind: 'occupied', server }
+  }
+
+  private async request(
+    url: string,
+    init?: RequestInit & { maxRedirections?: number },
+  ): Promise<Response> {
+    if (!this.directOrigin) return fetch(url, init)
+    const { fetch: pluginFetch } = await import('@tauri-apps/plugin-http')
+    return pluginFetch(url, init)
+  }
+
+  /**
+   * Resolve the ledger slug. A configured slug is trusted. Otherwise a failed
+   * probe is an error — the default name is not kept after a 404.
+   */
+  async ensureSlug(): Promise<string> {
+    if (this.slugResolved && this.slug) return this.slug
+
+    const configured = readLedgerSlug()
+    if (configured) {
+      this.slug = configured
+      this.slugResolved = true
+      return configured
+    }
+
+    const candidate = this.slug || DEFAULT_SLUG
+    let probe: Response
+    try {
+      probe = await this.request(`${this.prefix()}/${candidate}/api/ledger_data`)
+    } catch {
+      throw new Error(FAVA_UNREACHABLE)
+    }
+    if (probe.ok) {
+      this.slug = candidate
+      this.slugResolved = true
+      return candidate
+    }
+
+    let discovered: string | null = null
+    try {
+      const root = await this.request(
+        `${this.prefix()}/`,
+        this.directOrigin ? { maxRedirections: 0 } : undefined,
+      )
+      const base = root.url || `${this.prefix()}/`
+      const location = root.headers.get('location')
+      if (location) discovered = slugFromRedirectUrl(location)
+      if (!discovered) discovered = slugFromRedirectUrl(base)
+      await root.arrayBuffer().catch(() => undefined)
+    } catch {
+      discovered = null
+    }
+    if (discovered) {
+      try {
+        const check = await this.request(`${this.prefix()}/${discovered}/api/ledger_data`)
+        if (check.ok) {
+          this.slug = discovered
+          this.slugResolved = true
+          return discovered
+        }
+      } catch {
+        // Fall through to the configuration error.
+      }
+    }
+
+    throw new Error(FAVA_SLUG)
+  }
+
+  /**
+   * `path` is the Fava API path after the slug, e.g. `/api/changed`.
+   * A 404 on a discovered slug re-asks `/` once and retries; a slug in config.js does not.
+   */
+  private async fetchJson(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<{ data?: unknown; error?: string }> {
+    await this.ensureSlug()
+    let got = await this.readJson(`${this.prefix()}/${this.slug}${path}`, signal)
+    if (!got.ok && got.status === 404 && !readLedgerSlug() && (await this.rediscoverSlug())) {
+      got = await this.readJson(`${this.prefix()}/${this.slug}${path}`, signal)
+    }
+    if (!got.ok) {
+      throw new Error(got.body.error ? String(got.body.error) : `${got.status} ${got.statusText}`)
+    }
+    return got.body
+  }
+
+  private async readJson(
+    url: string,
+    signal?: AbortSignal,
+  ): Promise<{ ok: boolean; status: number; statusText: string; body: { data?: unknown; error?: string } }> {
+    const res = await this.request(url, { signal })
+    const json = (await res.json().catch(() => null)) as { data?: unknown; error?: string } | null
+    return {
+      ok: res.ok,
+      status: res.status,
+      statusText: res.statusText,
+      body: json ?? {},
+    }
+  }
+
+  private async rediscoverSlug(): Promise<boolean> {
+    const previous = this.slug
+    this.slug = null
+    this.slugResolved = false
+    try {
+      await this.ensureSlug()
+    } catch {
+      return false
+    }
+    return this.slug !== previous
+  }
+
+  async getLedgerData(signal?: AbortSignal): Promise<FavaLedgerData> {
+    if (!this.inflightLedger) {
+      this.inflightLedger = this.loadLedgerData().finally(() => {
+        this.inflightLedger = null
+      })
+    }
+    const data = await this.inflightLedger
+    if (signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    }
+    return data
+  }
+
+  private async loadLedgerData(): Promise<FavaLedgerData> {
+    const json = await this.fetchJson('/api/ledger_data')
+    return parseLedgerData(json.data)
+  }
+
+  async query(bql: string, time?: string, signal?: AbortSignal): Promise<BQLQueryResult> {
+    const params = new URLSearchParams({ query_string: bql })
+    if (time) params.set('time', time)
+    const json = await this.fetchJson(`/api/query?${params}`, signal)
+    return (json.data ?? { types: [], rows: [] }) as BQLQueryResult
+  }
+
+  private reportPath(endpoint: string, time?: string, conversion?: string): string {
+    const params = new URLSearchParams()
+    if (time) params.set('time', time)
+    if (conversion) params.set('conversion', quoteCommodity(conversion))
+    const query = params.toString()
+    return `/api/${endpoint}${query ? `?${query}` : ''}`
+  }
+
+  async ledgerChanged(signal?: AbortSignal): Promise<boolean> {
+    await this.ensureSlug()
+    const previous = this.slug
+    const json = await this.fetchJson('/api/changed', signal)
+    return this.slug !== previous || json.data === true
+  }
+
+  async getBalanceSheet(time?: string, conversion?: string, signal?: AbortSignal): Promise<unknown> {
+    const json = await this.fetchJson(this.reportPath('balance_sheet', time, conversion), signal)
+    return json.data
+  }
+
+  async getIncomeStatement(time?: string, conversion?: string, signal?: AbortSignal): Promise<unknown> {
+    const json = await this.fetchJson(this.reportPath('income_statement', time, conversion), signal)
+    return json.data
+  }
+
+  async getTrialBalance(time?: string, conversion?: string, signal?: AbortSignal): Promise<unknown> {
+    const json = await this.fetchJson(this.reportPath('trial_balance', time, conversion), signal)
+    return json.data
+  }
+
+  getDocumentUrl(filename: string): string {
+    return `${this.prefix()}/${this.getSlug()}/document/?filename=${encodeURIComponent(filename)}`
+  }
+
+  /** Bytes for an in-page preview. The desktop shell cannot use the raw URL in an image tag. */
+  async readDocument(filename: string, signal?: AbortSignal): Promise<Blob> {
+    await this.ensureSlug()
+    let res = await this.request(this.getDocumentUrl(filename), { signal })
+    if (!res.ok && res.status === 404 && !readLedgerSlug() && (await this.rediscoverSlug())) {
+      res = await this.request(this.getDocumentUrl(filename), { signal })
+    }
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    const header = res.headers.get('content-type')
+    const bytes = await res.arrayBuffer()
+    return new Blob([bytes], { type: documentType(filename, header) })
+  }
+
+  async getPostingYears(signal?: AbortSignal): Promise<string[]> {
+    const result = await this.query('SELECT year GROUP BY year', undefined, signal)
+    return (result.rows ?? []).map((row) => String(row[0])).sort((a, b) => b.localeCompare(a))
+  }
+
+  async getDocuments(signal?: AbortSignal): Promise<LedgerDocument[]> {
+    const json = await this.fetchJson('/api/documents', signal)
+    if (!Array.isArray(json.data)) {
+      throw new Error('documents')
+    }
+    return json.data as LedgerDocument[]
+  }
+
+  async getTransactions(time?: string, signal?: AbortSignal): Promise<JournalPage> {
+    const ledgerData = await this.getLedgerData(signal)
+    const currency = operatingCurrency(ledgerData.options.operating_currency)
+    const result = await this.query(journalQuery(), time, signal)
+    return assembleJournalRows(result.rows ?? [], currency)
+  }
+}
+
+export function parseLedgerData(data: unknown): FavaLedgerData {
+  if (data == null || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error(FAVA_LEDGER_DATA)
+  }
+  const options = (data as { options?: unknown }).options
+  if (options == null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new Error(FAVA_LEDGER_DATA)
+  }
+  return data as FavaLedgerData
+}
+
+function documentType(filename: string, header: string | null): string {
+  if (header && !header.startsWith('application/octet-stream')) return header
+  const lower = filename.toLowerCase()
+  if (lower.endsWith('.pdf')) return 'application/pdf'
+  if (lower.endsWith('.png')) return 'image/png'
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg'
+  if (lower.endsWith('.webp')) return 'image/webp'
+  if (lower.endsWith('.gif')) return 'image/gif'
+  return header || 'application/octet-stream'
+}
+
+export const favaClient = new FavaClient()

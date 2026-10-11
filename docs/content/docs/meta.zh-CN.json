@@ -1,0 +1,15 @@
+{
+  "title": "手册",
+  "pages": [
+    "index",
+    "---起步---",
+    "...setup",
+    "---功能---",
+    "reports",
+    "bookkeeping",
+    "desktop",
+    "calendar",
+    "---集成---",
+    "mcp"
+  ]
+}

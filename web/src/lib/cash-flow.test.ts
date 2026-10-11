@@ -1,0 +1,212 @@
+import { describe, expect, test } from 'bun:test'
+import {
+  classifyCashFlow,
+  compareCashFlow,
+  presentedLineAmount,
+  readAccountCashMeta,
+  type AccountCashMeta,
+  type CashPosting,
+} from './cash-flow'
+
+const accounts: AccountCashMeta[] = [
+  { account: 'Assets:Bank', cash: true, cashflow: null, cashflowIn: null, cashflowOut: null },
+  { account: 'Assets:Alipay', cash: true, cashflow: null, cashflowIn: null, cashflowOut: null },
+  { account: 'Income:Service', cash: false, cashflow: 'sales', cashflowIn: null, cashflowOut: null },
+  { account: 'Expenses:Fee', cash: false, cashflow: 'operating-other-out', cashflowIn: null, cashflowOut: null },
+  { account: 'Liabilities:Loan', cash: false, cashflow: null, cashflowIn: 'borrowings', cashflowOut: 'debt-principal' },
+  { account: 'Liabilities:VAT', cash: false, cashflow: null, cashflowIn: 'sales', cashflowOut: 'taxes' },
+  { account: 'Expenses:Payroll', cash: false, cashflow: 'wages', cashflowIn: null, cashflowOut: null },
+  { account: 'Liabilities:Payroll', cash: false, cashflow: 'wages', cashflowIn: null, cashflowOut: null },
+  { account: 'Assets:Equipment', cash: false, cashflow: 'capex', cashflowIn: null, cashflowOut: null },
+  { account: 'Equity:Capital', cash: false, cashflow: 'capital', cashflowIn: null, cashflowOut: null },
+]
+
+function posting(id: string, account: string, amount: number, currency = 'CNY'): CashPosting {
+  return { id, account, amount, currency }
+}
+
+function statement(postings: CashPosting[], extra: AccountCashMeta[] = []) {
+  return classifyCashFlow({ currency: 'CNY', postings, accounts: [...accounts, ...extra] })
+}
+
+describe('classifyCashFlow', () => {
+  test('a receipt and its contra account are one inflow', () => {
+    const result = statement([
+      posting('sale', 'Assets:Bank', 29715.47),
+      posting('sale', 'Income:Service', -29715.47),
+    ])
+
+    expect(result.lines.sales).toBeCloseTo(29715.47)
+    expect(result.sections.operating).toBeCloseTo(29715.47)
+    expect(result.net).toBeCloseTo(result.cashChange)
+    expect(result.hasCashAccounts).toBe(true)
+  })
+
+  test('no cash-marked account is unwired, not a zero statement', () => {
+    const result = classifyCashFlow({
+      currency: 'CNY',
+      postings: [
+        posting('sale', 'Assets:Bank', 100),
+        posting('sale', 'Income:Service', -100),
+      ],
+      accounts: [
+        { account: 'Assets:Bank', cash: false, cashflow: null, cashflowIn: null, cashflowOut: null },
+        { account: 'Income:Service', cash: false, cashflow: 'sales', cashflowIn: null, cashflowOut: null },
+      ],
+    })
+    expect(result.hasCashAccounts).toBe(false)
+    expect(result.net).toBe(0)
+    expect(result.unassigned).toEqual([])
+  })
+
+  test('several contra accounts in one entry add back to the bank', () => {
+    const result = statement([
+      posting('mix', 'Assets:Bank', 99950),
+      posting('mix', 'Income:Service', -60000),
+      posting('mix', 'Liabilities:Loan', -30000),
+      posting('mix', 'Expenses:Fee', 50),
+      posting('mix', 'Equity:Opening', -10000),
+    ])
+
+    expect(result.lines.sales).toBe(60000)
+    expect(result.lines.borrowings).toBe(30000)
+    expect(presentedLineAmount('operating-other-out', result.lines['operating-other-out'])).toBe(50)
+    expect(result.unassigned).toEqual([{ account: 'Equity:Opening', amount: 10000 }])
+    expect(result.net).toBe(result.cashChange)
+    expect(result.cashChange).toBe(99950)
+  })
+
+  test('moving cash between cash accounts drops out of the statement', () => {
+    const result = statement([
+      posting('move', 'Assets:Bank', -500),
+      posting('move', 'Assets:Alipay', 500),
+    ])
+
+    expect(result.net).toBe(0)
+    expect(result.cashChange).toBe(0)
+    expect(result.unassigned).toEqual([])
+  })
+
+  test('an accrual with no cash is skipped', () => {
+    const result = statement([
+      posting('accrual', 'Expenses:Payroll', 8000),
+      posting('accrual', 'Liabilities:Payroll', -8000),
+      posting('pay', 'Liabilities:Payroll', 8000),
+      posting('pay', 'Assets:Bank', -8000),
+    ])
+
+    expect(presentedLineAmount('wages', result.lines.wages)).toBe(8000)
+    expect(result.cashChange).toBe(-8000)
+    expect(result.net).toBe(result.cashChange)
+  })
+
+  test('cashflow-in and cashflow-out send the same account to different lines', () => {
+    const result = statement([
+      posting('collect', 'Assets:Bank', 113),
+      posting('collect', 'Liabilities:VAT', -113),
+      posting('remit', 'Liabilities:VAT', 113),
+      posting('remit', 'Assets:Bank', -113),
+    ])
+
+    expect(result.lines.sales).toBe(113)
+    expect(presentedLineAmount('taxes', result.lines.taxes)).toBe(113)
+    expect(result.net).toBe(0)
+    expect(result.net).toBe(result.cashChange)
+  })
+
+  test('an unknown line id stays with the account instead of joining another line', () => {
+    const result = statement(
+      [
+        posting('odd', 'Assets:Bank', -20),
+        posting('odd', 'Expenses:Mystery', 20),
+      ],
+      [{ account: 'Expenses:Mystery', cash: false, cashflow: 'not-a-line', cashflowIn: null, cashflowOut: null }],
+    )
+
+    expect(result.lines['operating-other-out']).toBe(0)
+    expect(result.unassigned).toEqual([{ account: 'Expenses:Mystery', amount: -20 }])
+    expect(result.net).toBe(result.cashChange)
+  })
+
+  test('a period-opening summarization is not a cash flow', () => {
+    const opening = (account: string, amount: number): CashPosting => ({
+      ...posting('open', account, amount),
+      flag: 'S',
+    })
+    const result = statement([
+      opening('Assets:Bank', 100),
+      opening('Equity:Opening-Balances', -100),
+      posting('pay', 'Expenses:Fee', 40),
+      posting('pay', 'Assets:Bank', -40),
+    ])
+
+    expect(presentedLineAmount('operating-other-out', result.lines['operating-other-out'])).toBe(40)
+    expect(result.unassigned).toEqual([])
+    expect(result.cashChange).toBe(-40)
+    expect(result.net).toBe(result.cashChange)
+  })
+
+  test('a foreign-currency posting is left out and named', () => {
+    const result = statement([
+      posting('fx', 'Assets:Bank', 10, 'USD'),
+      posting('fx', 'Income:Service', -70),
+    ])
+
+    expect(result.unconverted_currencies).toEqual(['USD'])
+    expect(result.lines.sales).toBe(0)
+  })
+})
+
+describe('compareCashFlow', () => {
+  test('keeps both amounts on the same catalogue line', () => {
+    const current = statement([
+      posting('now', 'Assets:Bank', 100),
+      posting('now', 'Income:Service', -100),
+    ])
+    const prior = statement([
+      posting('then', 'Assets:Bank', 40),
+      posting('then', 'Income:Service', -40),
+    ])
+    const compared = compareCashFlow(current, prior)
+    expect(compared.lines.sales.current).toBeCloseTo(100)
+    expect(compared.lines.sales.prior).toBeCloseTo(40)
+  })
+
+  test('a prior-only unassigned account contributes zero this period', () => {
+    const current = statement([
+      posting('now', 'Assets:Bank', 10),
+      posting('now', 'Income:Service', -10),
+    ])
+    const prior = statement(
+      [
+        posting('then', 'Assets:Bank', 5),
+        posting('then', 'Expenses:Mystery', -5),
+      ],
+      [{ account: 'Expenses:Mystery', cash: false, cashflow: null, cashflowIn: null, cashflowOut: null }],
+    )
+    const row = compareCashFlow(current, prior).unassigned.find((item) => item.account === 'Expenses:Mystery')
+    expect(row).toEqual({ account: 'Expenses:Mystery', current: 0, prior: expect.any(Number) })
+    expect(row?.prior).not.toBe(0)
+  })
+})
+
+describe('readAccountCashMeta', () => {
+  test('reads cash and the two direction overrides from open metadata', () => {
+    expect(
+      readAccountCashMeta('Liabilities:VAT', {
+        filename: '/tmp/accounts.bean',
+        lineno: 4,
+        cash: true,
+        cashflow: 'sales',
+        'cashflow-in': 'sales',
+        'cashflow-out': 'taxes',
+      }),
+    ).toEqual({
+      account: 'Liabilities:VAT',
+      cash: true,
+      cashflow: 'sales',
+      cashflowIn: 'sales',
+      cashflowOut: 'taxes',
+    })
+  })
+})

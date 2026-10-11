@@ -1,0 +1,53 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "BeanDesk window. HTTP is limited to http and https; the app only calls the saved Fava origin.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "core:window:allow-show",
+    "core:window:allow-set-title",
+    "dialog:default",
+    "store:default",
+    "log:default",
+    "updater:default",
+    "process:allow-restart",
+    "allow-start-saved-fava",
+    "allow-stop-saved-fava",
+    "allow-fava-host",
+    "allow-init-ledger",
+    "allow-inspect-ledger",
+    "allow-upgrade-ledger",
+    "allow-list-ledger-packs",
+    "allow-start-if-enabled",
+    "allow-read-user-text-file",
+    "allow-mcp-host-config",
+    "allow-system-locales",
+    "notification:default",
+    "allow-load-backup-settings",
+    "allow-save-backup-settings",
+    "allow-backup-status",
+    "allow-backup-now",
+    "allow-backup-set-key",
+    "allow-backup-restore",
+    "allow-backup-snapshots",
+    "allow-backup-test-s3",
+    "allow-backup-open-workdir",
+    "allow-open-url",
+    "allow-policy-status",
+    "allow-policy-approve",
+    "allow-policy-revert",
+    "allow-policy-switch-locale",
+    "allow-policy-follow-workdir",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://*:*/*" },
+        { "url": "https://*:*/*" }
+      ]
+    }
+  ]
+}

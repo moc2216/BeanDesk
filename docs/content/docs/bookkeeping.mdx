@@ -1,0 +1,128 @@
+---
+title: Bookkeeping and documents
+description: Ledger directory structure, account naming, document previews, and financial reporting guide.
+---
+
+BeanDesk works with Beancount to record business operating income and expenses. All transaction postings are stored in local plain-text ledger files, while source invoices and bank slips are filed in the documents folder. The application connects directly to the local ledger and service without a central backend or user accounts, storing ledger files and vouchers in your local work folder (encrypted backup copies are transferred to user-configured destinations only if restic remote storage is enabled).
+
+This page explains the ledger layout, how account names appear across reports, document filing conventions, and daily bookkeeping procedures.
+
+## Ledger directory structure
+
+When a standard ledger is initialized, the workspace contains the following hierarchy:
+
+```
+<work folder>/
+├── .beandesk
+├── .gitignore
+├── main.bean
+├── config/
+│   ├── commodities.bean
+│   └── accounts.bean
+├── data/
+│   └── YYYY/
+│       ├── YYYY.bean
+│       └── YYYY-MM.bean
+├── documents/
+└── policies/
+    ├── README.md
+    └── base/
+        ├── chart-of-accounts.md
+        ├── document-filing.md
+        └── bookkeeping-guide.md
+```
+
+- .beandesk: Versioned marker (`version` and `locale`) that marks a standard BeanDesk ledger and unlocks Git snapshots and restic backups on the desktop Backup page. A bare `beandesk` file from older builds is version 1 and can be upgraded in Settings.
+- main.bean: Main ledger entrypoint declaring operating currencies and importing configuration and annual indices. It must declare option "documents" "documents" to enable automated document scanning and linkage.
+- config/commodities.bean: Currency definitions. The zh-CN preset defaults to CNY and USD; the en preset defaults to USD and CNY.
+- config/accounts.bean: Declared chart of accounts. Initialization creates only the minimal universal accounts (checking and paid-in capital); operating accounts are opened on demand following policies/base/chart-of-accounts.md.
+- data/YYYY/YYYY-MM.bean: Monthly transaction postings. The annual index data/YYYY/YYYY.bean imports each month.
+- documents/: Source vouchers, electronic invoices, bank slips, and contract scans.
+- policies/: Accounting policy workspace. The base/ directory provides default account dictionaries, document filing rules, and routine bookkeeping guidelines. Optional machine rules (such as policies/base/rules.toml in zh-CN ledgers, or custom user-defined TOML rules) can enforce naming or posting conventions.
+- .gitignore: Version control ignore rules, excluding the backup passphrase (.backup_key), environment files (.env), and backup archives (backups/).
+
+## How account names appear on reports
+
+To reconcile Beancount parser constraints with localized reporting, BeanDesk uses structured account paths.
+
+### Naming formats
+
+- Chinese ledgers use the hyphen convention: Root:Category-中文:Sub-明细 (e.g. Assets:Bank-银行存款:Main-基本户).
+- English ledgers conventionally use capitalized Beancount account paths: Root:Category:Sub (e.g. Assets:Bank:Checking, Expenses:Operations:Rent), where Beancount requires each segment to begin with a capital letter.
+
+### Display conventions
+
+1. Flat views (Journals, Documents, Cash Flow, and BQL queries): In Chinese ledgers, BeanDesk extracts the Chinese label after the last hyphen in each colon-separated segment and joins them with " · " (e.g. "银行存款 · 基本户"). In English ledgers, standard Beancount account paths are displayed.
+2. Tree reports (Balance Sheet, Income Statement, Trial Balance): Expanded as an account tree. Each node (parents and leaves) shows the Chinese tail after that segment's last hyphen when present; otherwise the Beancount segment as-is (e.g. "Checking" nested under "Bank").
+3. Comments: Beancount trailing comments (; Note) are plain comments and do not affect account modeling or report labels.
+
+## Document filing and preview
+
+Store electronic bank slips, invoices, and contracts under the documents/ directory.
+
+### Folder mapping rules
+
+1. Account paths map to directories: Replace colons ":" in account names with directory slashes "/".
+2. Keep hyphen segments as single directories: Folders such as Bank-银行存款 stay as a single folder; do not split them into nested Bank/银行存款 subfolders.
+3. Filename format: Use YYYY-MM-DD.description.extension (separated by dots), where the date matches the transaction date.
+
+### Filing examples
+
+| Account | Document Directory | Example Filename |
+| :--- | :--- | :--- |
+| Assets:Bank-银行存款:Main-基本户 | documents/Assets/Bank-银行存款/Main-基本户/ | 2026-03-15.bank-receipt.pdf |
+| Expenses:Operations:Rent | documents/Expenses/Operations/Rent/ | 2026-03-01.office-lease-invoice.pdf |
+| Income:Service:Consulting | documents/Income/Service/Consulting/ | 2026-03-10.consulting-service-invoice.pdf |
+
+When a file's date and folder path match a transaction (or the filename includes the transaction's link tag), the document icon in the Journal lights up, allowing instant in-app previews.
+
+## Daily bookkeeping workflow
+
+Recording a routine transaction involves four steps:
+
+### 1. Ensure the account is opened
+Verify that accounts are declared with open directives in config/accounts.bean. Cash and bank accounts must declare cash: TRUE; operating accounts should specify cashflow classifications:
+
+```beancount
+2020-01-01 open Assets:Bank:Checking USD
+  cash: TRUE
+2020-01-01 open Income:Service:Consulting USD
+  cashflow: "sales"
+```
+
+### 2. Store document files
+Place invoice or receipt files into the corresponding subfolder under documents/.
+
+### 3. Write transaction postings
+Enter postings in the monthly file (e.g. data/2026/2026-03.bean), ensuring the annual index data/2026/2026.bean includes this month:
+
+```beancount
+2026-03-15 * "Acme Corp" "Software architecture consulting" #consulting #invoice
+  Income:Service:Consulting      -20000.00 USD
+  Assets:Bank:Checking            20000.00 USD
+```
+
+### 4. Verify and review
+Run bean-check main.bean on the command line or invoke check_ledger via desktop MCP:
+- bean-check verifies syntax, balances, and zero-sum postings.
+- check_ledger evaluates dated TOML rules under policies/ when present (such as localized naming patterns in zh-CN ledgers, or custom tag constraints configured by the user).
+Once ledger files are saved, BeanDesk displays updated financial statements when Fava reloads; journal entries automatically show preview icons when matching archived documents are found. `check_ledger` checks ledger files only; it does not verify that documents are filed.
+
+## Cash flow statement mapping and troubleshooting
+
+BeanDesk prepares the three-activity cash flow statement by the direct method, using metadata on account `open` directives:
+
+1. Cash accounts: Mark cash, bank, or online payment accounts with cash: TRUE.
+2. Flow classifications:
+   - Single-direction accounts: Use `cashflow: "<id>"` (e.g. sales, purchases, taxes, wages, capex, capital).
+   - Dual-direction accounts: Use `cashflow-in: "<id>"` and `cashflow-out: "<id>"` (e.g. shareholder advances: borrowings on receipt, debt-principal on repayment).
+
+This metadata is used for financial report classification and is not strictly required by `check_ledger`. If metadata is missing, postings will appear in Unclassified Items on the cash flow statement while still passing balance checks.
+
+### Common troubleshooting items
+
+- “No cash accounts configured”: No account is annotated with cash: TRUE.
+- Amounts in “Unclassified Items”: The counter-account is missing a cashflow code. Add the metadata in config/accounts.bean to categorize it.
+
+Refer to the [Reports](/reports) manual for all 16 standardized cash flow row identifiers.
+
