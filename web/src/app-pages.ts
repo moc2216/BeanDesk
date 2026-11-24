@@ -1,9 +1,10 @@
-import { Archive, Banknote, BookOpen, FileSpreadsheet, Landmark, Scale, Terminal } from 'lucide-react'
+import { Archive, Banknote, BookOpen, ChartPie, FileSpreadsheet, Landmark, Scale, Terminal } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import type { MessageKey } from '@/i18n/locales/en'
 import { BalanceSheet } from '@/pages/BalanceSheet'
 import { CashFlow } from '@/pages/CashFlow'
+import { Charts } from '@/pages/Charts'
 import { Documents } from '@/pages/Documents'
 import { IncomeStatement } from '@/pages/IncomeStatement'
 import { Journal } from '@/pages/Journal'
@@ -24,6 +25,7 @@ export const REPORT_PAGES: Array<{
   { path: '/journal', key: 'journal.title', icon: BookOpen, Page: Journal },
   { path: '/documents', key: 'documents.title', navKey: 'documents.nav', icon: Archive, Page: Documents },
   { path: '/query', key: 'query.title', icon: Terminal, Page: QueryPlayground },
+  { path: '/charts', key: 'charts.title', icon: ChartPie, Page: Charts },
 ]
 
 export function navLabelKey(page: (typeof REPORT_PAGES)[number]): MessageKey {
