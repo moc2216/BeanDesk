@@ -3,6 +3,7 @@ import * as echarts from 'echarts'
 import { useMemo, useState } from 'react'
 
 import { Chart } from '@/components/echart'
+import { PortfolioView } from '@/components/portfolio-view'
 import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
@@ -382,7 +383,9 @@ export function Charts() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-lg font-semibold">{t('charts.title')}</h1>
-        <ReportWhen currency={currency}>{balance.data?.as_of ? formatDate(balance.data.as_of) : null}</ReportWhen>
+        <ReportWhen currency={currency}>
+          {balance.data?.as_of ? formatDate(balance.data.as_of) : null}
+        </ReportWhen>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
@@ -504,6 +507,10 @@ export function Charts() {
           ) : null}
         </div>
       )}
+
+      <section className="mt-2 flex flex-col gap-4 border-t pt-6">
+        <PortfolioView />
+      </section>
     </div>
   )
 }

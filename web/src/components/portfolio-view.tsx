@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 
 const COLORS = ['#4f8cff', '#f06a9b', '#ffc53d', '#35c8d8', '#f4765a', '#7c6cf0', '#35c88a', '#b08968']
 
-export function Portfolio() {
+export function PortfolioView() {
   const { t, formatCurrency } = useI18n()
   const { format: formatAccount } = useAccountDisplay()
   const { timeFilter, isAllTime } = useTimeFilter()
@@ -153,9 +153,9 @@ export function Portfolio() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold">{t('portfolio.title')}</h1>
+          <h2 className="text-base font-semibold">{t('portfolio.title')}</h2>
           <p className="text-xs text-muted-foreground">{t('portfolio.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
