@@ -99,12 +99,20 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     onOpenChange(false)
   }
 
-  function resetAll() {
-    clearFilter()
+  function clearDraft() {
+    setPending(null)
     setRange(undefined)
     setStart('')
     setEnd('')
-    onOpenChange(false)
+    setInvalid(false)
+  }
+
+  function choosePreset(value: string) {
+    setPending(value)
+    setRange(undefined)
+    setStart('')
+    setEnd('')
+    setInvalid(false)
   }
 
   return (
@@ -124,7 +132,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
               variant={pending === '' ? 'secondary' : 'ghost'}
               size="sm"
               className="justify-start"
-              onClick={() => setPending('')}
+              onClick={() => choosePreset('')}
             >
               {t('time.allTime')}
               {pending === '' ? <Check className="ml-auto size-3.5" /> : null}
@@ -142,7 +150,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                     variant={pending?.startsWith(year) ? 'default' : 'outline'}
                     onClick={() => {
                       setSelectedYear(Number(year))
-                      setPending(year)
+                      choosePreset(year)
                     }}
                   >
                     {year}
@@ -163,7 +171,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                       key={value}
                       size="xs"
                       variant={pending === value ? 'default' : 'outline'}
-                      onClick={() => setPending(value)}
+                      onClick={() => choosePreset(value)}
                     >
                       {quarter}
                     </Button>
@@ -185,7 +193,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                       key={value}
                       size="xs"
                       variant={pending === value ? 'default' : 'outline'}
-                      onClick={() => setPending(value)}
+                      onClick={() => choosePreset(value)}
                     >
                       {month}
                     </Button>
@@ -236,13 +244,13 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" className="mr-auto" onClick={resetAll}>
+          <Button variant="ghost" className="mr-auto" onClick={clearDraft}>
             {t('time.clearAll')}
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={apply} disabled={!start || !end}>
+          <Button onClick={apply} disabled={pending === null && (!start || !end)}>
             {t('time.applyRange')}
           </Button>
         </DialogFooter>
