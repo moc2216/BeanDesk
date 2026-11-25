@@ -127,6 +127,13 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
       <DialogContent
         className="sm:max-w-3xl"
         onOpenAutoFocus={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+          // Let buttons and calendar cells handle their own Enter.
+          if ((event.target as HTMLElement).closest('button')) return
+          event.preventDefault()
+          apply()
+        }}
       >
         <DialogHeader>
           <DialogTitle>{t('time.pickerTitle')}</DialogTitle>
