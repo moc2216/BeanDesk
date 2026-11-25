@@ -1,4 +1,4 @@
-import { CalendarDays, Check, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { enUS, zhCN } from 'react-day-picker/locale'
@@ -50,7 +50,10 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   const [invalid, setInvalid] = useState(false)
   const [pending, setPending] = useState<string | null>(null)
   const [selectedYear, setSelectedYear] = useState(Number(availableYears[0] ?? new Date().getFullYear()))
-  const [viewMonth, setViewMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [leftMonth, setLeftMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [rightMonth, setRightMonth] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+  )
 
   const calendarLocale = locale.toLowerCase().startsWith('zh') ? zhCN : enUS
   const activeYear = selectedYear
@@ -72,7 +75,9 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     const parsedYear = Number((preset ?? '').slice(0, 4))
     setSelectedYear(parsedYear > 1900 ? parsedYear : Number(availableYears[0] ?? new Date().getFullYear()))
     const anchor = from ?? new Date()
-    setViewMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1))
+    const anchorEnd = to ?? new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
+    setLeftMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1))
+    setRightMonth(new Date(anchorEnd.getFullYear(), anchorEnd.getMonth(), 1))
     // Only resync when the panel opens; choosing a preset no longer closes it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -231,59 +236,150 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{t('time.jumpTo')}</span>
-              <Select
-                value={String(viewMonth.getFullYear())}
-                onValueChange={(value) =>
-                  setViewMonth(new Date(Number(value), viewMonth.getMonth(), 1))
-                }
-              >
-                <SelectTrigger size="sm" className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from(
-                    { length: lastYear - firstYear + 1 },
-                    (_, index) => firstYear + index,
-                  ).map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={String(viewMonth.getMonth() + 1)}
-                onValueChange={(value) =>
-                  setViewMonth(new Date(viewMonth.getFullYear(), Number(value) - 1, 1))
-                }
-              >
-                <SelectTrigger size="sm" className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                    <SelectItem key={month} value={String(month)}>
-                      {new Date(2000, month - 1, 1).toLocaleString(locale, { month: 'short' })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {t('time.startMonth')}
+                  </span>
+                  <Select
+                    value={String(leftMonth.getFullYear())}
+                    onValueChange={(value) =>
+                      setLeftMonth(new Date(Number(value), leftMonth.getMonth(), 1))
+                    }
+                  >
+                    <SelectTrigger size="sm" className="h-7 w-[76px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: lastYear - firstYear + 1 },
+                        (_, index) => firstYear + index,
+                      ).map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={String(leftMonth.getMonth() + 1)}
+                    onValueChange={(value) =>
+                      setLeftMonth(new Date(leftMonth.getFullYear(), Number(value) - 1, 1))
+                    }
+                  >
+                    <SelectTrigger size="sm" className="h-7 w-[76px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                        <SelectItem key={month} value={String(month)}>
+                          {new Date(2000, month - 1, 1).toLocaleString(locale, { month: 'short' })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={pickRange}
+                  month={leftMonth}
+                  onMonthChange={setLeftMonth}
+                  hideNavigation
+                  numberOfMonths={1}
+                  locale={calendarLocale}
+                  startMonth={new Date(firstYear, 0)}
+                  endMonth={new Date(lastYear, 11)}
+                  classNames={{ month_caption: 'sr-only' }}
+                  className="rounded-lg border"
+                />
+              </div>
 
-            <Calendar
-              mode="range"
-              selected={range}
-              onSelect={pickRange}
-              month={viewMonth}
-              onMonthChange={setViewMonth}
-              numberOfMonths={2}
-              locale={calendarLocale}
-              startMonth={new Date(firstYear, 0)}
-              endMonth={new Date(lastYear, 11)}
-              className="rounded-lg border"
-            />
+              <div className="flex h-full flex-col items-center justify-center gap-1 pt-8">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t('time.prevMonth')}
+                  onClick={() => {
+                    setLeftMonth(new Date(leftMonth.getFullYear(), leftMonth.getMonth() - 1, 1))
+                    setRightMonth(new Date(rightMonth.getFullYear(), rightMonth.getMonth() - 1, 1))
+                  }}
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t('time.nextMonth')}
+                  onClick={() => {
+                    setLeftMonth(new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1, 1))
+                    setRightMonth(new Date(rightMonth.getFullYear(), rightMonth.getMonth() + 1, 1))
+                  }}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {t('time.endMonth')}
+                  </span>
+                  <Select
+                    value={String(rightMonth.getFullYear())}
+                    onValueChange={(value) =>
+                      setRightMonth(new Date(Number(value), rightMonth.getMonth(), 1))
+                    }
+                  >
+                    <SelectTrigger size="sm" className="h-7 w-[76px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: lastYear - firstYear + 1 },
+                        (_, index) => firstYear + index,
+                      ).map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={String(rightMonth.getMonth() + 1)}
+                    onValueChange={(value) =>
+                      setRightMonth(new Date(rightMonth.getFullYear(), Number(value) - 1, 1))
+                    }
+                  >
+                    <SelectTrigger size="sm" className="h-7 w-[76px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                        <SelectItem key={month} value={String(month)}>
+                          {new Date(2000, month - 1, 1).toLocaleString(locale, { month: 'short' })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={pickRange}
+                  month={rightMonth}
+                  onMonthChange={setRightMonth}
+                  hideNavigation
+                  numberOfMonths={1}
+                  locale={calendarLocale}
+                  startMonth={new Date(firstYear, 0)}
+                  endMonth={new Date(lastYear, 11)}
+                  classNames={{ month_caption: 'sr-only' }}
+                  className="rounded-lg border"
+                />
+              </div>
+            </div>
             <p className="text-[11px] text-muted-foreground">{t('time.rangeHint')}</p>
 
             <div className="grid gap-2 sm:grid-cols-2">
