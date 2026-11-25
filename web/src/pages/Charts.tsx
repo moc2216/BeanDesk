@@ -106,7 +106,7 @@ function ChartFrame({
   className?: string
 }) {
   return (
-    <section className={cn('rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]', className)}>
+    <section className={cn('density-card rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -292,8 +292,9 @@ export function Charts() {
   )
   const money = (value: number) => formatCurrency(Number(value), currency)
 
-  const axisX = (data: string[]) => categoryAxis(data)
-  const axisY = (formatter: (value: number) => string) => valueAxis(formatter)
+  const { isDark } = useTheme()
+  const axisX = (data: string[]) => categoryAxis(data, isDark)
+  const axisY = (formatter: (value: number) => string) => valueAxis(formatter, isDark)
 
   const flowsOption = useMemo<echarts.EChartsOption>(
     () => ({
@@ -630,21 +631,40 @@ export function Charts() {
               </div>
             }
           >
-            <Pie items={allocation.items} top={allocation.top} label={t('charts.topShare')} currency={currency} />
-            <p className="text-xs text-muted-foreground">
-              {t(
-                dim === 'assetClass'
-                  ? 'charts.effectiveAssetClass'
-                  : dim === 'group'
-                    ? 'charts.effectiveGroups'
-                    : 'charts.effectiveAccounts',
-              )}{' '}
-              {allocation.effective.toFixed(1)}
-            </p>
+            {allocation.total > 0 ? (
+              <>
+                <Pie
+                  items={allocation.items}
+                  top={allocation.top}
+                  label={t('charts.topShare')}
+                  currency={currency}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    dim === 'assetClass'
+                      ? 'charts.effectiveAssetClass'
+                      : dim === 'group'
+                        ? 'charts.effectiveGroups'
+                        : 'charts.effectiveAccounts',
+                  )}{' '}
+                  {allocation.effective.toFixed(1)}
+                </p>
+              </>
+            ) : (
+              <p className="py-12 text-center text-xs text-muted-foreground">
+                {t('charts.noAllocation')}
+              </p>
+            )}
           </ChartFrame>
 
           <ChartFrame title={t('charts.spending')} hint={t('charts.spendingHint')}>
-            <Treemap nodes={expenses?.children ?? []} currency={currency} />
+                                {visible(expenses?.children ?? []).length > 0 ? (
+              <Treemap nodes={expenses?.children ?? []} currency={currency} />
+            ) : (
+              <p className="py-12 text-center text-xs text-muted-foreground">
+                {t('charts.noExpenses')}
+              </p>
+            )}
           </ChartFrame>
 
       <Dialog open={mapOpen} onOpenChange={setMapOpen}>

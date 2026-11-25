@@ -182,6 +182,8 @@ export const en = {
   },
 
   charts: {
+    noAllocation: 'No assets this period',
+    noExpenses: 'No spending this period',
     filterPeriod: 'Period',
     kpiUnavailable: 'No data',
     savingsUndefined: 'No income this period',
