@@ -9,7 +9,7 @@ import { LedgerErrors } from '@/components/ledger-errors'
 import { PolicyBanner } from '@/components/policy-banner'
 import { StartupLoading, useStartupScreen } from '@/components/startup-loading'
 import { AccountDisplayToggle } from '@/components/account-display-toggle'
-import { CalendarPeriodButton, TimeFilterSelector } from '@/components/time-filter-selector'
+import { TimeFilterSelector } from '@/components/time-filter-selector'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Sheet,
@@ -171,7 +171,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-1 sm:gap-2">
             <AccountDisplayToggle />
             <TimeFilterSelector />
-            <CalendarPeriodButton />
             <HandbookControl appearance="icon" />
             <NavLink
               to="/settings"

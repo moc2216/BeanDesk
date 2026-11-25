@@ -1,4 +1,4 @@
-import { CalendarDays, Check, ChevronDown, X } from 'lucide-react'
+import { CalendarDays, Check, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { enUS, zhCN } from 'react-day-picker/locale'
@@ -243,13 +243,18 @@ export function TimeFilterSelector({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <Button variant={isAllTime ? 'outline' : 'secondary'} onClick={() => setOpen(true)}>
-        <CalendarDays className="hidden text-muted-foreground sm:block" data-icon="inline-start" />
-        <span className="max-w-[100px] truncate sm:max-w-none" title={formatPeriodLabel(timeFilter, t)}>
-          {formatPeriodLabel(timeFilter, t)}
-        </span>
-        <ChevronDown className="hidden text-muted-foreground opacity-70 sm:block" data-icon="inline-end" />
-      </Button>
+      <Hint label={t('time.pickerTitle')}>
+        <Button
+          variant={isAllTime ? 'outline' : 'secondary'}
+          onClick={() => setOpen(true)}
+          aria-label={t('time.pickerTitle')}
+        >
+          <CalendarDays className="text-muted-foreground" data-icon="inline-start" />
+          <span className="max-w-[110px] truncate" title={formatPeriodLabel(timeFilter, t)}>
+            {formatPeriodLabel(timeFilter, t)}
+          </span>
+        </Button>
+      </Hint>
 
       {!isAllTime && (
         <Hint label={t('time.allTime')}>
@@ -261,26 +266,5 @@ export function TimeFilterSelector({ className }: { className?: string }) {
 
       <PeriodDialog open={open} onOpenChange={setOpen} />
     </div>
-  )
-}
-
-export function CalendarPeriodButton() {
-  const { t } = useI18n()
-  const [open, setOpen] = useState(false)
-
-  return (
-    <>
-      <Hint label={t('time.pickerTitle')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={t('time.pickerTitle')}
-          onClick={() => setOpen(true)}
-        >
-          <CalendarDays />
-        </Button>
-      </Hint>
-      <PeriodDialog open={open} onOpenChange={setOpen} />
-    </>
   )
 }
