@@ -6,6 +6,7 @@ import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
+import { useAccountDisplay } from '@/lib/account-display'
 import { fetchChartData } from '@/lib/chart-series'
 import { useTimeFilter } from '@/lib/time-context'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,7 @@ function visible(nodes: AccountNode[]): AccountNode[] {
   return nodes.filter((node) => Math.abs(node.total) > 0.005)
 }
 
-function share(nodes: AccountNode[], group: (node: AccountNode) => string) {
+function share(nodes: AccountNode[], group: (node: AccountNode) => string, otherLabel: string) {
   const merged = new Map<string, number>()
   for (const node of visible(nodes)) {
     const key = group(node)
@@ -33,7 +34,7 @@ function share(nodes: AccountNode[], group: (node: AccountNode) => string) {
   const total = items.reduce((sum, item) => sum + item.value, 0)
   const kept = items.filter((item) => total > 0 && item.value / total >= 0.01).slice(0, 8)
   const rest = items.filter((item) => !kept.includes(item)).reduce((sum, item) => sum + item.value, 0)
-  if (rest > 0) kept.push({ name: '其他', value: rest })
+  if (rest > 0) kept.push({ name: otherLabel, value: rest })
   const hhi = total > 0 ? items.reduce((sum, item) => sum + (item.value / total) ** 2, 0) : 0
   return {
     items: kept,
@@ -133,10 +134,14 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
 
 function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }) {
   const { formatCurrency } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const data = visible(nodes).map((node) => ({
-    name: leaf(node.name),
+    name: formatAccount(node.name),
     value: Math.abs(node.total),
-    children: visible(node.children).map((child) => ({ name: leaf(child.name), value: Math.abs(child.total) })),
+    children: visible(node.children).map((child) => ({
+      name: formatAccount(child.name),
+      value: Math.abs(child.total),
+    })),
   }))
   const option = useMemo<echarts.EChartsOption>(
     () => ({
@@ -167,6 +172,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
 
 export function Charts() {
   const { t, locale, formatCurrency, formatDate } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const { timeFilter, isAllTime } = useTimeFilter()
   const time = isAllTime ? undefined : timeFilter
   const balance = useQuery({ queryKey: ['charts-balance', time], queryFn: ({ signal }) => fetchBalanceSheet(time, signal) })
@@ -181,8 +187,14 @@ export function Charts() {
   const incomeSection = income.data?.sections.find((section) => section.section === 'income')
 
   const allocation = useMemo(
-    () => share(assets, (node) => (dim === 'class' ? node.name.split(':')[1] ?? leaf(node.name) : leaf(node.name))),
-    [assets, dim],
+    () =>
+      share(
+        assets,
+        (node) =>
+          formatAccount(dim === 'class' ? node.name.split(':')[1] ?? leaf(node.name) : leaf(node.name)),
+        t('charts.otherLabel'),
+      ),
+    [assets, dim, formatAccount, t],
   )
 
   const incomeTotal = Math.abs(incomeSection?.total ?? 0)
@@ -345,17 +357,21 @@ export function Charts() {
       tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
       xAxis: axisX(composition?.points.map((point) => point.label) ?? []),
       yAxis: axisY((value) => compact.format(value)),
-      series: (composition?.categories ?? []).map((name, index) => ({
-        type: 'bar' as const,
-        name,
-        stack: 'spend',
-        data: (composition?.points ?? []).map((point) => point.values[index] ?? 0),
-        itemStyle: { color: PALETTE[index % PALETTE.length] },
-        barMaxWidth: 18,
-      })),
+      series: (composition?.categories ?? []).map((name, index) => {
+        const last = index === (composition?.categories.length ?? 0) - 1
+        const merged = composition?.merged ?? 0
+        return {
+          type: 'bar' as const,
+          name: last && merged > 0 ? t('charts.otherBuckets', { count: merged }) : formatAccount(name),
+          stack: 'spend',
+          data: (composition?.points ?? []).map((point) => point.values[index] ?? 0),
+          itemStyle: { color: PALETTE[index % PALETTE.length] },
+          barMaxWidth: 18,
+        }
+      }),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [composition, currency, compact],
+    [composition, currency, compact, formatAccount, t],
   )
 
   const payeeOption = useMemo<echarts.EChartsOption>(

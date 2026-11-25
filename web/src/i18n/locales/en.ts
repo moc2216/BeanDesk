@@ -52,6 +52,13 @@ export const en = {
     yearAndQuarter: 'Year and Quarter',
     selectPeriod: 'Select period',
     quickFilters: 'Quick filters',
+    customRange: 'Custom range…',
+    customRangeTitle: 'Custom date range',
+    customRangeHint: 'Both the start and end day are included.',
+    startDate: 'Start date',
+    endDate: 'End date',
+    applyRange: 'Apply',
+    rangeInvalid: 'Pick both dates, and the start must not be after the end.',
   },
 
   locale: {
@@ -165,6 +172,7 @@ export const en = {
     topPayees: 'Top payees',
     topPayeesHint: 'Largest total spending per payee, all time.',
     otherLabel: 'Other',
+    otherBuckets: 'Other ({count})',
     noSeries: 'No data recorded yet.',
     seriesUnavailable: 'The monthly charts could not be loaded. The reports above still work.',
     unavailable: 'The charts need the engine. Start the ledger and try again.',

@@ -40,7 +40,7 @@ export interface ChartData {
   cashflow: CashflowPoint[]
   savings: SavingsPoint[]
   netWorth: NetWorthPoint[]
-  composition: { categories: string[]; points: CompositionPoint[] }
+  composition: { categories: string[]; points: CompositionPoint[]; merged: number }
   payees: PayeeSlice[]
 }
 
@@ -117,7 +117,7 @@ export function buildComposition(
   currency: string,
   otherLabel: string,
   axis: string[] = [],
-): { categories: string[]; points: CompositionPoint[] } {
+): { categories: string[]; points: CompositionPoint[]; merged: number } {
   const byMonth = new Map<string, Map<string, number>>()
   for (const row of rows) {
     const [year, month, account, inventory] = row
@@ -155,7 +155,7 @@ export function buildComposition(
     return { ...pointFromKey(key), values }
   })
 
-  return { categories, points }
+  return { categories, points, merged: Math.max(0, ranked.length - COMPOSITION_TOP) }
 }
 
 /** Largest expense totals per payee. Rows come from a GROUP BY payee query. */

@@ -56,6 +56,13 @@ export const zhCN = {
     yearAndQuarter: '年度与季度',
     selectPeriod: '选择期间',
     quickFilters: '快捷筛选',
+    customRange: '自定义区间…',
+    customRangeTitle: '自定义日期区间',
+    customRangeHint: '包含开始和结束当天。',
+    startDate: '开始日期',
+    endDate: '结束日期',
+    applyRange: '应用',
+    rangeInvalid: '请选择两个日期，开始日期不能晚于结束日期。',
   },
 
   locale: {
@@ -168,6 +175,7 @@ export const zhCN = {
     topPayees: '支出对象排行',
     topPayeesHint: '按收款方汇总的历史支出，取前十二名。',
     otherLabel: '其他',
+    otherBuckets: '其他（{count} 类）',
     noSeries: '还没有可绘制的数据。',
     seriesUnavailable: '月度图表加载失败，上方报表仍可正常使用。',
     unavailable: '图表需要账本引擎，启动账本后再试。',
