@@ -75,6 +75,7 @@ export async function disconnectSession(): Promise<'stopped' | 'detached'> {
  * another program already listens on the wildcard address. An origin that is
  * already Fava is left running.
  */
+
 export async function openConnection(
   connection: LedgerConnection,
   onStep?: (step: ConnectionStep) => void,
@@ -85,7 +86,10 @@ export async function openConnection(
   let started = false
   try {
     if (!current()) return false
-    const state = await favaClient.probe()
+    const state = await Promise.race([
+      favaClient.probe(),
+      new Promise<{ kind: 'closed' }>((resolve) => setTimeout(() => resolve({ kind: 'closed' }), 3000)),
+    ])
     if (!current()) return false
     if (state.kind === 'fava') {
       await favaClient.ensureSlug()
@@ -130,7 +134,10 @@ async function waitForLedger(
   while (Date.now() < deadline) {
     if (!current()) return false
     if (!(await favaWasStarted())) throw new Error('start-exited')
-    const state = await favaClient.probe()
+    const state = await Promise.race([
+      favaClient.probe(),
+      new Promise<{ kind: 'closed' }>((resolve) => setTimeout(() => resolve({ kind: 'closed' }), 3000)),
+    ])
     if (!current()) return false
     if (state.kind === 'fava') {
       try {
