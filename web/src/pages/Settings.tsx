@@ -30,6 +30,7 @@ import { LocaleToggle } from '@/components/locale-toggle'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { loadDensity, saveDensity, type Density } from '@/lib/density'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
 import {
@@ -107,6 +108,33 @@ function linkModeMessage(mode: LinkMode) {
   return 'settings.modeEngine'
 }
 
+function DensityToggle() {
+  const { t } = useI18n()
+  const [value, setValue] = useState<Density>(() => loadDensity())
+  const options: Array<{ key: Density; label: string }> = [
+    { key: 'comfortable', label: t('settings.densityComfortable') },
+    { key: 'compact', label: t('settings.densityCompact') },
+  ]
+
+  return (
+    <div className="inline-flex items-center gap-0.5 rounded-lg border p-0.5">
+      {options.map((option) => (
+        <Button
+          key={option.key}
+          size="sm"
+          variant={value === option.key ? 'default' : 'ghost'}
+          onClick={() => {
+            setValue(option.key)
+            saveDensity(option.key)
+          }}
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
+  )
+}
+
 function GeneralSettings({ tauri }: { tauri: boolean }) {
   const { t } = useI18n()
 
@@ -120,6 +148,12 @@ function GeneralSettings({ tauri }: { tauri: boolean }) {
       <div className="flex flex-col items-start gap-1.5">
         <span className={formTitleClass}>{t('locale.switcherLabel')}</span>
         <LocaleToggle />
+      </div>
+      <Separator />
+      <div className="flex flex-col items-start gap-1.5">
+        <span className={formTitleClass}>{t('settings.density')}</span>
+        <p className="text-xs text-muted-foreground">{t('settings.densityHint')}</p>
+        <DensityToggle />
       </div>
       {tauri ? (
         <>

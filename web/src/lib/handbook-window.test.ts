@@ -64,7 +64,8 @@ describe('handbook window capability', () => {
 
   test('loads the bundled site and nothing privileged', () => {
     expect(capability.windows).toEqual([HANDBOOK_WINDOW])
-    expect(capability.permissions).toEqual(['core:default'])
+    // Closing its own window on Escape is the only addition; nothing else.
+    expect(capability.permissions).toEqual(['core:default', 'core:window:allow-close'])
   })
 })
 

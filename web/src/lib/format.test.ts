@@ -71,13 +71,14 @@ describe('presentBalance', () => {
 
 describe('formatCurrency', () => {
   test('formats a known ISO code', () => {
-    expect(formatCurrency(52375.5, 'USD', 'en-US')).toBe('$52,375.50')
+    expect(formatCurrency(52375.5, 'USD', 'en-US')).toBe('US$52,375.50')
   })
 
   test('uses the locale of the reader, not of the currency', () => {
     // Same amount, same currency, two audiences.
     expect(formatCurrency(52375.5, 'USD', 'zh-CN')).toBe('US$52,375.50')
     expect(formatCurrency(52375.5, 'CNY', 'zh-CN')).toBe('¥52,375.50')
+    expect(formatCurrency(52375.5, 'CNY', 'en-US')).toBe('¥52,375.50')
   })
 
   test('falls back to a plain number for an unknown code', () => {
@@ -88,15 +89,15 @@ describe('formatCurrency', () => {
 
 describe('formatSignedCurrency', () => {
   test('marks a profit with a plus', () => {
-    expect(formatSignedCurrency(51375.5, 'USD', 'en-US')).toBe('+$51,375.50')
+    expect(formatSignedCurrency(51375.5, 'USD', 'en-US')).toBe('+US$51,375.50')
   })
 
   test('marks a loss with a minus', () => {
-    expect(formatSignedCurrency(-42, 'USD', 'en-US')).toBe('−$42.00')
+    expect(formatSignedCurrency(-42, 'USD', 'en-US')).toBe('−US$42.00')
   })
 
   test('leaves zero unsigned', () => {
-    expect(formatSignedCurrency(0, 'USD', 'en-US')).toBe('$0.00')
+    expect(formatSignedCurrency(0, 'USD', 'en-US')).toBe('US$0.00')
   })
 })
 
@@ -116,7 +117,7 @@ describe('formatQueryValue', () => {
   })
 
   test('joins more than one commodity', () => {
-    expect(formatQueryValue({ CNY: 10, USD: 2 }, 'en-US')).toBe('CN¥10.00, $2.00')
+    expect(formatQueryValue({ CNY: 10, USD: 2 }, 'en-US')).toBe('¥10.00, US$2.00')
   })
 
   test('reads the units inside a position', () => {

@@ -134,3 +134,15 @@
     @apply font-sans;
     }
 }
+
+/* Compact density: tighter tables and cards, chosen in Settings > Interface. */
+[data-density='compact'] [data-slot='table-cell'] {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+}
+[data-density='compact'] [data-slot='table-head'] {
+    height: 1.9rem;
+}
+[data-density='compact'] [data-slot='card'] {
+    --card-spacing: 0.75rem;
+}

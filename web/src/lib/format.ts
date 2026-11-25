@@ -56,23 +56,46 @@ export function formatNumber(
   return new Intl.NumberFormat(locale, options).format(value)
 }
 
+// Fixed symbols keep the same figure readable in every UI language.
+// Only money gets a symbol; units such as BTC, USDT, AU9999 stay as code suffixes.
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CNY: '¥',
+  USD: 'US$',
+  HKD: 'HK$',
+  EUR: '€',
+  GBP: '£',
+  JPY: 'JP¥',
+  SGD: 'S$',
+  AUD: 'A$',
+  CAD: 'C$',
+  KRW: '₩',
+  CHF: 'CHF',
+}
+
 export function formatCurrency(
   value: number,
   currency: string,
   locale: string,
   options: Intl.NumberFormatOptions = {},
 ): string {
+  const maximumFractionDigits = options.maximumFractionDigits ?? 2
+  const minimumFractionDigits =
+    options.minimumFractionDigits ?? Math.min(2, maximumFractionDigits)
+  let number: string
   try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
+    number = new Intl.NumberFormat(locale, {
       ...options,
-    }).format(value)
+      minimumFractionDigits,
+      maximumFractionDigits,
+      useGrouping: options.useGrouping ?? true,
+    }).format(Math.abs(value))
   } catch {
-    // Unknown/invalid ISO code — fall back to a plain number plus the code.
-    return `${formatNumber(value, locale, { maximumFractionDigits: 2 })} ${currency}`
+    number = String(Math.abs(value))
   }
+  const sign = value < 0 ? '-' : ''
+  const symbol = CURRENCY_SYMBOLS[currency.toUpperCase()]
+  if (symbol) return sign + symbol + number
+  return sign + number + ' ' + currency
 }
 
 /** Signed currency, used for figures where direction carries meaning. */
