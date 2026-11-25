@@ -14,6 +14,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Hint } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
@@ -43,6 +50,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   const [invalid, setInvalid] = useState(false)
   const [pending, setPending] = useState<string | null>(null)
   const [selectedYear, setSelectedYear] = useState(Number(availableYears[0] ?? new Date().getFullYear()))
+  const [viewMonth, setViewMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
 
   const calendarLocale = locale.toLowerCase().startsWith('zh') ? zhCN : enUS
   const activeYear = selectedYear
@@ -63,6 +71,8 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     setPending(preset)
     const parsedYear = Number((preset ?? '').slice(0, 4))
     setSelectedYear(parsedYear > 1900 ? parsedYear : Number(availableYears[0] ?? new Date().getFullYear()))
+    const anchor = from ?? new Date()
+    setViewMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1))
     // Only resync when the panel opens; choosing a preset no longer closes it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -221,14 +231,55 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           </div>
 
           <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t('time.jumpTo')}</span>
+              <Select
+                value={String(viewMonth.getFullYear())}
+                onValueChange={(value) =>
+                  setViewMonth(new Date(Number(value), viewMonth.getMonth(), 1))
+                }
+              >
+                <SelectTrigger size="sm" className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(
+                    { length: lastYear - firstYear + 1 },
+                    (_, index) => firstYear + index,
+                  ).map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={String(viewMonth.getMonth() + 1)}
+                onValueChange={(value) =>
+                  setViewMonth(new Date(viewMonth.getFullYear(), Number(value) - 1, 1))
+                }
+              >
+                <SelectTrigger size="sm" className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                    <SelectItem key={month} value={String(month)}>
+                      {new Date(2000, month - 1, 1).toLocaleString(locale, { month: 'short' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Calendar
               mode="range"
               selected={range}
               onSelect={pickRange}
+              month={viewMonth}
+              onMonthChange={setViewMonth}
               numberOfMonths={2}
               locale={calendarLocale}
-              captionLayout="dropdown"
-              navLayout="after"
               startMonth={new Date(firstYear, 0)}
               endMonth={new Date(lastYear, 11)}
               className="rounded-lg border"

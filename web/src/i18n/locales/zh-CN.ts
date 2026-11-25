@@ -59,6 +59,7 @@ export const zhCN = {
     pickerTitle: '会计区间',
     pickerHint: '在日历上点选开始和结束日期，或直接使用快捷期间。',
     rangeHint: '先点开始日期，再翻到结束月份点结束日期，可跨月、跨年。',
+    jumpTo: '跳转到',
     clearAll: '清空',
     customRange: '自定义区间…',
     customRangeTitle: '自定义日期区间',
