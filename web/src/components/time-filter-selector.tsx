@@ -439,7 +439,8 @@ export function TimeFilterSelector({ className }: { className?: string }) {
     <div className={cn('flex items-center gap-1', className)}>
       <Hint label={t('time.pickerTitle')}>
         <Button
-          variant={isAllTime ? 'outline' : 'secondary'}
+          variant="ghost"
+          size="sm"
           onClick={() => setOpen(true)}
           aria-label={t('time.pickerTitle')}
         >

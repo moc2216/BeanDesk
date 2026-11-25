@@ -20,7 +20,7 @@ export function AccountDisplayToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon-sm" aria-label={t('accountDisplay.label')}>
+        <Button variant="ghost" size="icon-sm" aria-label={t('accountDisplay.label')}>
           <Languages />
         </Button>
       </DropdownMenuTrigger>
