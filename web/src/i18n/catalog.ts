@@ -26,6 +26,13 @@ export interface Catalog {
   [key: string]: Message | Catalog
 }
 
+/*
+ * Careful: a nested object whose keys are all strings and which happens to
+ * include a key named `other` is structurally a PluralForms, so LeafPaths
+ * stops descending and the whole subtree loses its dot-paths. Name such a key
+ * something else (e.g. `otherLabel`).
+ */
+
 /** Values that may be interpolated into a message's `{placeholders}`. */
 export type Vars = Record<string, string | number>
 

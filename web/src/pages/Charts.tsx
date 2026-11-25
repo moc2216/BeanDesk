@@ -6,6 +6,7 @@ import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
+import { fetchChartData } from '@/lib/chart-series'
 import { cn } from '@/lib/utils'
 
 const PALETTE = ['#4f8cff', '#35c88a', '#ffb020', '#ff6b6b', '#a78bfa', '#22d3ee', '#f472b6', '#94a3b8']
@@ -88,6 +89,11 @@ function ChartFrame({
   )
 }
 
+function Chart({ option, height = 260 }: { option: echarts.EChartsOption; height?: number }) {
+  const host = useChart(option)
+  return <div ref={host} className="w-full" style={{ height }} />
+}
+
 function Pie({ items, top, label, currency }: { items: Array<{ name: string; value: number }>; top: number; label: string; currency: string }) {
   const { formatCurrency } = useI18n()
   const option = useMemo<echarts.EChartsOption>(
@@ -122,11 +128,6 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
   )
   const host = useChart(option)
   return <div ref={host} className="h-[260px] w-full" />
-}
-
-function Bars({ option }: { option: echarts.EChartsOption }) {
-  const host = useChart(option)
-  return <div ref={host} className="h-[220px] w-full" />
 }
 
 function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }) {
@@ -164,7 +165,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
 }
 
 export function Charts() {
-  const { t, formatCurrency, formatDate } = useI18n()
+  const { t, locale, formatCurrency, formatDate } = useI18n()
   const balance = useQuery({ queryKey: ['charts-balance'], queryFn: ({ signal }) => fetchBalanceSheet(undefined, signal) })
   const income = useQuery({ queryKey: ['charts-income'], queryFn: ({ signal }) => fetchIncomeStatement(undefined, signal) })
   const [dim, setDim] = useState<'class' | 'account'>('class')
@@ -189,6 +190,29 @@ export function Charts() {
   const net = (balance.data?.totals.assets ?? 0) + (balance.data?.totals.liabilities ?? 0)
   const currency = balance.data?.operating_currency ?? income.data?.operating_currency ?? 'CNY'
 
+  const series = useQuery({
+    queryKey: ['charts-series', currency],
+    enabled: !loading && !failed && Boolean(currency),
+    queryFn: ({ signal }) => fetchChartData(currency, t('charts.otherLabel'), signal),
+  })
+
+  const compact = useMemo(
+    () => new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }),
+    [locale],
+  )
+  const money = (value: number) => formatCurrency(Number(value), currency)
+
+  const axisX = (data: string[]) => ({
+    type: 'category' as const,
+    data,
+    axisTick: { show: false },
+    axisLabel: { fontSize: 10, hideOverlap: true },
+  })
+  const axisY = (formatter: (value: number) => string) => ({
+    type: 'value' as const,
+    axisLabel: { fontSize: 10, formatter: (value: number | string) => formatter(Number(value)) },
+  })
+
   const flowsOption = useMemo<echarts.EChartsOption>(
     () => ({
       grid: { left: 88, right: 24, top: 12, bottom: 24 },
@@ -209,6 +233,158 @@ export function Charts() {
     }),
     [expenseTotal, incomeTotal, left, currency, formatCurrency, t],
   )
+
+  const netWorth = series.data?.netWorth ?? []
+  const cashflow = series.data?.cashflow ?? []
+  const savings = series.data?.savings ?? []
+  const composition = series.data?.composition
+  const payees = series.data?.payees ?? []
+
+  const netWorthOption = useMemo<echarts.EChartsOption>(
+    () => ({
+      grid: { left: 68, right: 20, top: 16, bottom: 24 },
+      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      xAxis: axisX(netWorth.map((point) => point.label)),
+      yAxis: axisY((value) => compact.format(value)),
+      series: [
+        {
+          type: 'line',
+          name: t('charts.netWorth'),
+          data: netWorth.map((point) => point.value),
+          showSymbol: false,
+          lineStyle: { width: 2, color: PALETTE[0] },
+          areaStyle: { opacity: 0.12, color: PALETTE[0] },
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            label: { show: false },
+            data: [{ yAxis: 0, lineStyle: { type: 'dashed', opacity: 0.5 } }],
+          },
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [netWorth, currency, formatCurrency, t, compact],
+  )
+
+  const cashflowOption = useMemo<echarts.EChartsOption>(
+    () => ({
+      grid: { left: 68, right: 20, top: 36, bottom: 24 },
+      legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11 } },
+      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      xAxis: axisX(cashflow.map((point) => point.label)),
+      yAxis: axisY((value) => compact.format(value)),
+      series: [
+        {
+          type: 'bar',
+          name: t('charts.income'),
+          data: cashflow.map((point) => point.income),
+          itemStyle: { color: PALETTE[1] },
+          barMaxWidth: 14,
+        },
+        {
+          type: 'bar',
+          name: t('charts.expense'),
+          data: cashflow.map((point) => point.expense),
+          itemStyle: { color: PALETTE[3] },
+          barMaxWidth: 14,
+        },
+        {
+          type: 'line',
+          name: t('charts.left'),
+          data: cashflow.map((point) => point.left),
+          symbol: 'circle',
+          symbolSize: 4,
+          lineStyle: { width: 2, color: PALETTE[0] },
+          itemStyle: { color: PALETTE[0] },
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cashflow, currency, t, compact],
+  )
+
+  const savingsOption = useMemo<echarts.EChartsOption>(
+    () => ({
+      grid: { left: 48, right: 20, top: 16, bottom: 24 },
+      tooltip: {
+        trigger: 'axis',
+        valueFormatter: (value) => (value == null ? '—' : Number(value).toFixed(1) + '%'),
+      },
+      xAxis: axisX(savings.map((point) => point.label)),
+      yAxis: axisY((value) => value.toFixed(0) + '%'),
+      series: [
+        {
+          type: 'line',
+          data: savings.map((point) => (point.value == null ? null : point.value * 100)),
+          showSymbol: false,
+          connectNulls: false,
+          lineStyle: { width: 2, color: PALETTE[2] },
+          areaStyle: { opacity: 0.1, color: PALETTE[2] },
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            label: { fontSize: 10, formatter: (params) => Number(params.value).toFixed(0) + '%' },
+            data: [{ type: 'average', lineStyle: { type: 'dashed', opacity: 0.6 } }],
+          },
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [savings, compact],
+  )
+
+  const compositionOption = useMemo<echarts.EChartsOption>(
+    () => ({
+      color: PALETTE,
+      grid: { left: 68, right: 20, top: 52, bottom: 24 },
+      legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10 }, type: 'scroll' },
+      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      xAxis: axisX(composition?.points.map((point) => point.label) ?? []),
+      yAxis: axisY((value) => compact.format(value)),
+      series: (composition?.categories ?? []).map((name, index) => ({
+        type: 'bar' as const,
+        name,
+        stack: 'spend',
+        data: (composition?.points ?? []).map((point) => point.values[index] ?? 0),
+        itemStyle: { color: PALETTE[index % PALETTE.length] },
+        barMaxWidth: 18,
+      })),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [composition, currency, compact],
+  )
+
+  const payeeOption = useMemo<echarts.EChartsOption>(
+    () => ({
+      grid: { left: 100, right: 36, top: 8, bottom: 24 },
+      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      xAxis: axisY((value) => compact.format(value)),
+      yAxis: {
+        type: 'category',
+        data: payees.map((payee) => payee.name).reverse(),
+        axisTick: { show: false },
+        axisLabel: {
+          fontSize: 10,
+          formatter: (name: string) => (name.length > 12 ? name.slice(0, 12) + '…' : name),
+        },
+      },
+      series: [
+        {
+          type: 'bar',
+          data: payees.map((payee) => payee.value).reverse(),
+          itemStyle: { color: PALETTE[4] },
+          barMaxWidth: 14,
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [payees, currency, compact],
+  )
+
+  const seriesPending = series.isPending
+  const seriesFailed = series.isError
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -235,6 +411,20 @@ export function Charts() {
         <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">{t('charts.unavailable')}</div>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
+          <ChartFrame
+            title={t('charts.netWorthTrend')}
+            hint={t('charts.netWorthTrendHint')}
+            className="lg:col-span-2"
+          >
+            {seriesPending ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : netWorth.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <Chart option={netWorthOption} />
+            )}
+          </ChartFrame>
+
           <ChartFrame
             title={t('charts.allocation')}
             hint={t('charts.allocationHint')}
@@ -266,9 +456,59 @@ export function Charts() {
             <Treemap nodes={expenses?.children ?? []} currency={currency} />
           </ChartFrame>
 
-          <ChartFrame title={t('charts.flows')} hint={t('charts.flowsHint')} className="lg:col-span-2">
-            <Bars option={flowsOption} />
+          <ChartFrame title={t('charts.monthlyFlows')} hint={t('charts.monthlyFlowsHint')}>
+            {seriesPending ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : cashflow.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <Chart option={cashflowOption} />
+            )}
           </ChartFrame>
+
+          <ChartFrame title={t('charts.savingsTrend')} hint={t('charts.savingsTrendHint')}>
+            {seriesPending ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : savings.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <Chart option={savingsOption} />
+            )}
+          </ChartFrame>
+
+          <ChartFrame
+            title={t('charts.composition')}
+            hint={t('charts.compositionHint')}
+            className="lg:col-span-2"
+          >
+            {seriesPending ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (composition?.points.length ?? 0) === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <Chart option={compositionOption} height={280} />
+            )}
+          </ChartFrame>
+
+          <ChartFrame title={t('charts.topPayees')} hint={t('charts.topPayeesHint')}>
+            {seriesPending ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : payees.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <Chart option={payeeOption} height={280} />
+            )}
+          </ChartFrame>
+
+          <ChartFrame title={t('charts.flows')} hint={t('charts.flowsHint')}>
+            <Chart option={flowsOption} height={280} />
+          </ChartFrame>
+
+          {seriesFailed ? (
+            <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground lg:col-span-2">
+              {t('charts.seriesUnavailable')}
+            </div>
+          ) : null}
         </div>
       )}
     </div>
