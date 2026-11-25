@@ -144,7 +144,6 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-3xl"
-        onOpenAutoFocus={(event) => event.preventDefault()}
         onKeyDown={(event) => {
           if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
           // Let buttons and calendar cells handle their own Enter.
