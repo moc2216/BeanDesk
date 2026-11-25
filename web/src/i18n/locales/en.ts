@@ -144,7 +144,7 @@ export const en = {
 
   portfolio: {
     title: 'Portfolio',
-    subtitle: 'Long-term investments only — daily cash accounts stay out.',
+    subtitle: 'The long-term slice of your asset allocation — daily cash stays out.',
     accounts: 'Accounts',
     accountsTitle: 'Investment accounts',
     accountsHint: 'Only the checked groups count here. Daily accounts can stay out.',

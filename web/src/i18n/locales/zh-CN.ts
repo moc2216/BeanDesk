@@ -147,7 +147,7 @@ export const zhCN = {
 
   portfolio: {
     title: '投资组合',
-    subtitle: '只看长期投资资产，日常账户不计入。',
+    subtitle: '资产配置中的长期投资部分，日常账户不计入。',
     accounts: '投资账户',
     accountsTitle: '选择投资账户',
     accountsHint: '只统计勾选的类别，日常账户可以不选。',

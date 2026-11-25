@@ -452,6 +452,10 @@ export function Charts() {
             <Treemap nodes={expenses?.children ?? []} currency={currency} />
           </ChartFrame>
 
+          <section className="mt-2 flex flex-col gap-4 border-t pt-6 lg:col-span-2">
+            <PortfolioView />
+          </section>
+
           <ChartFrame title={t('charts.monthlyFlows')} hint={t('charts.monthlyFlowsHint')}>
             {seriesPending ? (
               <Skeleton className="h-[260px] w-full" />
@@ -508,9 +512,6 @@ export function Charts() {
         </div>
       )}
 
-      <section className="mt-2 flex flex-col gap-4 border-t pt-6">
-        <PortfolioView />
-      </section>
     </div>
   )
 }
