@@ -190,6 +190,7 @@ export const en = {
     mapTitle: 'Asset class mapping',
     mapHint: 'Assign each group to an asset class; the ring aggregates by this.',
     mapEdit: 'Asset class mapping',
+    mapAuto: 'Reset to auto',
     assetClasses: {
       cash: 'Cash',
       fixedIncome: 'Fixed income',

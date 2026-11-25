@@ -24,7 +24,14 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
-import { ASSET_CLASSES, classOf, loadClassMap, saveClassMap, type AssetClass } from '@/lib/asset-classes'
+import {
+  ASSET_CLASSES,
+  classOf,
+  guessAssetClass,
+  loadClassMap,
+  saveClassMap,
+  type AssetClass,
+} from '@/lib/asset-classes'
 import { useTheme } from '@/components/theme-provider'
 import type { MessageKey } from '@/i18n/locales/en'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
@@ -452,9 +459,21 @@ export function Charts() {
   }
 
   function saveMap() {
-    setClassMap(mapDraft)
-    saveClassMap(mapDraft)
+    // Keep only real overrides: guessing again later still works after renames.
+    const next: Record<string, AssetClass> = {}
+    for (const node of classGroups) {
+      const value = mapDraft[node.account] ?? classOf(node, classMap)
+      if (value !== guessAssetClass(node.account, node.name)) next[node.account] = value
+    }
+    setClassMap(next)
+    saveClassMap(next)
     setMapOpen(false)
+  }
+
+  function resetMap() {
+    const draft: Record<string, AssetClass> = {}
+    for (const node of classGroups) draft[node.account] = guessAssetClass(node.account, node.name)
+    setMapDraft(draft)
   }
 
   const seriesPending = series.isPending
@@ -589,6 +608,9 @@ export function Charts() {
             ))}
           </div>
           <DialogFooter>
+            <Button variant="ghost" className="mr-auto" onClick={resetMap}>
+              {t('charts.mapAuto')}
+            </Button>
             <Button variant="ghost" onClick={() => setMapOpen(false)}>
               {t('common.cancel')}
             </Button>

@@ -193,6 +193,7 @@ export const zhCN = {
     mapTitle: '资产类别映射',
     mapHint: '把每个大类归入一个资产类别，环形图按这个口径汇总。',
     mapEdit: '资产类别映射',
+    mapAuto: '恢复自动识别',
     assetClasses: {
       cash: '现金',
       fixedIncome: '固收',
