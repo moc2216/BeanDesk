@@ -12,7 +12,6 @@ import { WarmMainWindow } from '@/components/warm-main-window'
 import { I18nProvider } from '@/i18n'
 import { AccountDisplayProvider } from '@/lib/account-display'
 import { TimeFilterProvider } from '@/lib/time-context'
-import { Calendar } from '@/pages/Calendar'
 import { Settings } from '@/pages/Settings'
 
 const queryClient = new QueryClient({
@@ -41,7 +40,6 @@ export default function App() {
                     <DesktopGuard>
                       <KeptReports />
                       <Routes>
-                        <Route path="/calendar" element={<Calendar />} />
                         <Route path="/settings" element={<Settings />} />
                       </Routes>
                     </DesktopGuard>

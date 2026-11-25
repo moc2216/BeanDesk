@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { isTauri } from '@tauri-apps/api/core'
 import { NavLink, useLocation } from 'react-router'
-import { BookOpenText, CalendarDays, Menu, Settings } from 'lucide-react'
+import { BookOpenText, Menu, Settings } from 'lucide-react'
 
 import { REPORT_PAGES, navLabelKey } from '@/app-pages'
 import { BrandMark } from '@/components/brand-mark'
@@ -9,7 +9,7 @@ import { LedgerErrors } from '@/components/ledger-errors'
 import { PolicyBanner } from '@/components/policy-banner'
 import { StartupLoading, useStartupScreen } from '@/components/startup-loading'
 import { AccountDisplayToggle } from '@/components/account-display-toggle'
-import { TimeFilterSelector } from '@/components/time-filter-selector'
+import { CalendarPeriodButton, TimeFilterSelector } from '@/components/time-filter-selector'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Sheet,
@@ -79,8 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const brand = t('brand.short')
   const settingsDesktop = pathname === '/settings' && isTauri()
-  const calendarPage = pathname === '/calendar'
-  const hideLedgerErrors = settingsDesktop || calendarPage
+  const hideLedgerErrors = settingsDesktop
   useDocumentTitle(t('brand.window'))
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
@@ -89,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (starting) return <StartupLoading />
 
   return (
-    <div className={cn('flex flex-col bg-background', settingsDesktop || calendarPage ? 'h-svh overflow-hidden' : 'min-h-svh')}>
+    <div className={cn('flex flex-col bg-background', settingsDesktop ? 'h-svh overflow-hidden' : 'min-h-svh')}>
       <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-1 px-2 sm:gap-2 sm:px-6 lg:px-8">
           <div className="flex shrink-0 items-center gap-1">
@@ -131,21 +130,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <span>{t(key)}</span>
                     </NavLink>
                   ))}
-                  <NavLink
-                    to="/calendar"
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-secondary text-secondary-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                      )
-                    }
-                  >
-                    <CalendarDays className="size-4 shrink-0" />
-                    <span>{t('calendar.title')}</span>
-                  </NavLink>
                   <HandbookControl appearance="sheet" onOpened={() => setMobileOpen(false)} />
                 </nav>
               </SheetContent>
@@ -187,15 +171,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-1 sm:gap-2">
             <AccountDisplayToggle />
             <TimeFilterSelector />
-            <NavLink
-              to="/calendar"
-              aria-label={t('calendar.title')}
-              className={({ isActive }) =>
-                cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'icon-sm' }))
-              }
-            >
-              <CalendarDays />
-            </NavLink>
+            <CalendarPeriodButton />
             <HandbookControl appearance="icon" />
             <NavLink
               to="/settings"
@@ -214,9 +190,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={
           settingsDesktop
             ? 'flex min-h-0 w-full flex-1 flex-col'
-            : calendarPage
-              ? 'mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-3 py-6 sm:px-6 sm:py-8 lg:px-8'
-              : 'mx-auto flex w-full max-w-7xl flex-col gap-6 px-3 py-6 sm:px-6 sm:py-8 lg:px-8'
+            : 'mx-auto flex w-full max-w-7xl flex-col gap-6 px-3 py-6 sm:px-6 sm:py-8 lg:px-8'
         }
       >
         {hideLedgerErrors ? null : <LedgerErrors />}

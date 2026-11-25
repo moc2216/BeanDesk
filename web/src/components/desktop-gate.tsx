@@ -2,10 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation } from 'react-router'
 import { invoke, isTauri } from '@tauri-apps/api/core'
-import { toast } from 'sonner'
 
 import { useI18n } from '@/i18n'
-import { bootCalendarNotices } from '@/lib/calendar'
 import { loadConnection, loadHostSnapshot, loadSuspended, openConnection } from '@/lib/desktop'
 import { favaClient } from '@/lib/fava-client'
 import {
@@ -114,14 +112,6 @@ export function DesktopProvider({ children }: { children: ReactNode }) {
     setHost(cleared)
     void queryClient.removeQueries()
   }, [queryClient])
-
-  useEffect(() => {
-    if (!isTauri()) return
-    void bootCalendarNotices({
-      t: (key, vars) => tRef.current(key, vars),
-      toast: (title, extras) => toast(title, extras),
-    }).catch(() => undefined)
-  }, [])
 
   useEffect(() => {
     if (!isTauri()) return
@@ -251,7 +241,7 @@ export function DesktopGuard({ children }: { children: ReactNode }) {
   const desktop = useDesktop()
   const { pathname } = useLocation()
 
-  if (desktop.status === 'setup' && pathname !== '/settings' && pathname !== '/calendar') {
+  if (desktop.status === 'setup' && pathname !== '/settings') {
     return <Navigate to="/settings" replace />
   }
   return children
