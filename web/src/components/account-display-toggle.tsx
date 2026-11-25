@@ -1,4 +1,4 @@
-import { Check, Languages } from 'lucide-react'
+import { Check, Tags } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +21,7 @@ export function AccountDisplayToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-sm" aria-label={t('accountDisplay.label')}>
-          <Languages />
+          <Tags />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
