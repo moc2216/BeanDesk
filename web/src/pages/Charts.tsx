@@ -3,7 +3,6 @@ import * as echarts from 'echarts'
 import { useMemo, useState } from 'react'
 
 import { Chart } from '@/components/echart'
-import { PortfolioPanel } from '@/components/portfolio-panel'
 import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
@@ -416,20 +415,6 @@ export function Charts() {
               <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
             ) : (
               <Chart option={netWorthOption} />
-            )}
-          </ChartFrame>
-
-          <ChartFrame
-            title={t('charts.portfolio')}
-            hint={t('charts.portfolioHint')}
-            className="lg:col-span-2"
-          >
-            {seriesPending ? (
-              <Skeleton className="h-[340px] w-full" />
-            ) : assets.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
-            ) : (
-              <PortfolioPanel nodes={assets} currency={currency} />
             )}
           </ChartFrame>
 
