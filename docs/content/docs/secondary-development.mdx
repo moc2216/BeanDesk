@@ -1,0 +1,80 @@
+---
+title: Secondary development
+description: What this repository changes relative to the original BeanDesk, plus licensing and upstream sync.
+---
+
+The original handbook and application come from [BeanDesk](https://github.com/SuperDaniel-cn/BeanDesk) by SuperDaniel-cn, released under **AGPL-3.0**. This repository is a derivative extension.
+
+> Principle: the original author's design notes, chapters and licence stay untouched. This page lists our changes separately for review, audit and credit.
+
+## What we changed
+
+### Accounting period
+
+- Four icon-only header controls; the calendar opens one period panel;
+- Year, quarter, month or a custom start/end date, staged until **Apply**;
+- While a filter is active, a **clear period** button (FilterX) sits left of the calendar;
+- Every report and the journal state the active period; balances also show "as of".
+
+### Charts
+
+- Net worth, cash flow, savings rate, spending mix and top payees;
+- Allocation by asset class, top-level group or leaf account;
+- Colours bind to the category key, not to its rank;
+- A collapsed "View details" list makes the donut and treemap readable by keyboard;
+- Separate states for empty period, failed load and unconverted currencies; KPIs never show 0 when data is missing.
+
+### Money and precision
+
+- Fixed symbols: `¥` for CNY and `US$` for USD in every language;
+- Crypto keeps unit precision (BTC/ETH up to 8 decimals, USDT/USDC 2);
+- True zero, unavailable data and undefined ratios are distinct states.
+
+### Interface and accessibility
+
+- One table chrome for reports and the journal; 14px body, 12px axis labels;
+- **Comfortable / Compact** density in Settings, remembered locally;
+- Indigo accent; categorical colours separated from gain/loss red and green;
+- Axis and treemap labels pick black or white from the fill (4.5:1); reduced motion honoured;
+- Period dialog keeps focus inside; the handbook closes with Escape.
+
+### Portfolio and accounts
+
+- Portfolio block with target shares and quick select-all/clear;
+- Chinese labels vs raw paths, pinyin search, CSV export paths.
+
+## Scope notes
+
+- This fork **does not expose the Calendar page**; the original chapter stays for upstream reference.
+- The period **clear** button remains left of the calendar (an earlier review suggested moving it into the dialog; usage feedback brought it back).
+
+## What we did not change
+
+- The Beancount file format and directory conventions;
+- Storage, backup, connection and MCP capabilities;
+- The original licence, copyright notices and handbook chapters.
+
+## Build and verify
+
+```bash
+make install
+make dev
+make docs-sync
+cd web && bun test && bunx tsc -p tsconfig.app.json --noEmit
+```
+
+## Syncing upstream
+
+```bash
+git remote add upstream https://github.com/SuperDaniel-cn/BeanDesk
+git fetch upstream
+git merge upstream/main
+```
+
+Most conflicts sit in `web/src/pages/Charts.tsx`, `web/src/components/time-filter-selector.tsx` and `docs/content/docs/**`.
+
+## Credit and licence
+
+- Original work: BeanDesk by SuperDaniel-cn, AGPL-3.0;
+- These modifications are also released under **AGPL-3.0**. Keep `LICENSE`, this page and the original copyright notices when redistributing;
+- Derivatives should keep the original author's attribution.

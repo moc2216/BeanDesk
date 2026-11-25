@@ -1,0 +1,16 @@
+BeanDesk
+Copyright (c) SuperDaniel-cn
+Original source: https://github.com/SuperDaniel-cn/BeanDesk
+Licence: GNU Affero General Public License v3.0 (see LICENSE)
+
+This repository is a derivative work. It contains modifications and additions
+to the original project, documented in:
+
+- docs/content/docs/secondary-development.zh-CN.mdx
+- docs/content/docs/secondary-development.mdx
+- SECONDARY-DEVELOPMENT.md
+
+The original author's design notes, handbook chapters and copyright notices are
+kept unchanged. All modifications are distributed under the same AGPL-3.0
+licence. Redistributions must preserve LICENSE, this NOTICE and the original
+attribution.
