@@ -1,4 +1,4 @@
-import { CalendarDays, Check, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { enUS, zhCN } from 'react-day-picker/locale'
@@ -236,8 +236,8 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
-              <div className="flex flex-col gap-2">
+            <div className="relative grid grid-cols-2 items-start gap-10">
+              <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     {t('time.startMonth')}
@@ -287,6 +287,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                   month={leftMonth}
                   onMonthChange={setLeftMonth}
                   hideNavigation
+                  fixedWeeks
                   numberOfMonths={1}
                   locale={calendarLocale}
                   startMonth={new Date(firstYear, 0)}
@@ -296,7 +297,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                 />
               </div>
 
-              <div className="flex h-full flex-col items-center justify-center gap-1 pt-8">
+              <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1">
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -321,7 +322,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                 </Button>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-medium text-muted-foreground">
                     {t('time.endMonth')}
@@ -371,6 +372,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                   month={rightMonth}
                   onMonthChange={setRightMonth}
                   hideNavigation
+                  fixedWeeks
                   numberOfMonths={1}
                   locale={calendarLocale}
                   startMonth={new Date(firstYear, 0)}
@@ -431,33 +433,26 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 }
 
 export function TimeFilterSelector({ className }: { className?: string }) {
-  const { timeFilter, clearFilter, isAllTime } = useTimeFilter()
+  const { timeFilter, isAllTime } = useTimeFilter()
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <Hint label={t('time.pickerTitle')}>
+      <Hint label={formatPeriodLabel(timeFilter, t)}>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon-sm"
           onClick={() => setOpen(true)}
           aria-label={t('time.pickerTitle')}
+          className="relative"
         >
-          <CalendarDays className="text-muted-foreground" data-icon="inline-start" />
-          <span className="max-w-[110px] truncate" title={formatPeriodLabel(timeFilter, t)}>
-            {formatPeriodLabel(timeFilter, t)}
-          </span>
+          <CalendarDays className="text-muted-foreground" />
+          {!isAllTime ? (
+            <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+          ) : null}
         </Button>
       </Hint>
-
-      {!isAllTime && (
-        <Hint label={t('time.allTime')}>
-          <Button variant="ghost" size="icon-sm" onClick={clearFilter} aria-label={t('time.allTime')}>
-            <X />
-          </Button>
-        </Hint>
-      )}
 
       <PeriodDialog open={open} onOpenChange={setOpen} />
     </div>
