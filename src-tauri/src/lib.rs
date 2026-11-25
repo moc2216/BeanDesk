@@ -38,7 +38,7 @@ const HANDBOOK_CLOSE_SCRIPT: &str = r#"
     try {
       window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: 'handbook' });
     } catch (error) {}
-  });
+  }, true);
 })();
 "#;
 
