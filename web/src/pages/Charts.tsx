@@ -19,24 +19,12 @@ const PALETTE = CHART_COLORS
 const INCOME = '#12a594'
 const EXPENSE = '#e0656b'
 
-function leaf(name: string): string {
-  const parts = name.split(':')
-  return parts.length > 1 ? parts[parts.length - 1] : name
-}
-
 function visible(nodes: AccountNode[]): AccountNode[] {
   return nodes.filter((node) => Math.abs(node.total) > 0.005)
 }
 
-function share(nodes: AccountNode[], group: (node: AccountNode) => string, otherLabel: string) {
-  const merged = new Map<string, number>()
-  for (const node of visible(nodes)) {
-    const key = group(node)
-    merged.set(key, (merged.get(key) ?? 0) + Math.abs(node.total))
-  }
-  const items = [...merged.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
+function shareItems(items: Array<{ name: string; value: number }>, otherLabel: string) {
+  items = items.filter((item) => item.value > 0.005).sort((a, b) => b.value - a.value)
   const total = items.reduce((sum, item) => sum + item.value, 0)
   const kept = items.filter((item) => total > 0 && item.value / total >= 0.01).slice(0, 8)
   const rest = items.filter((item) => !kept.includes(item)).reduce((sum, item) => sum + item.value, 0)
@@ -48,6 +36,25 @@ function share(nodes: AccountNode[], group: (node: AccountNode) => string, other
     top: items[0] ? items[0].value / total : 0,
     effective: hhi > 0 ? 1 / hhi : 0,
   }
+}
+
+/** Deepest accounts with their own postings; duplicate names get a parent prefix. */
+function leafItems(nodes: AccountNode[], format: (name: string) => string) {
+  const rows: Array<{ name: string; value: number; parent: string }> = []
+  const walk = (node: AccountNode, parentLabel: string) => {
+    const childTotal = node.children.reduce((sum, child) => sum + child.total, 0)
+    const own = node.total - childTotal
+    const label = format(node.name)
+    if (Math.abs(own) > 0.005) rows.push({ name: label, value: Math.abs(own), parent: parentLabel })
+    for (const child of node.children) walk(child, label)
+  }
+  for (const node of nodes) walk(node, '')
+  const counts = new Map<string, number>()
+  for (const row of rows) counts.set(row.name, (counts.get(row.name) ?? 0) + 1)
+  return rows.map((row) => ({
+    name: (counts.get(row.name) ?? 0) > 1 && row.parent ? row.parent + ' · ' + row.name : row.name,
+    value: row.value,
+  }))
 }
 
 function ChartFrame({
@@ -196,16 +203,15 @@ export function Charts() {
   const expenses = income.data?.sections.find((section) => section.section === 'expenses')
   const incomeSection = income.data?.sections.find((section) => section.section === 'income')
 
-  const allocation = useMemo(
-    () =>
-      share(
-        assets,
-        (node) =>
-          formatAccount(dim === 'class' ? node.name.split(':')[1] ?? leaf(node.name) : leaf(node.name)),
-        t('charts.otherLabel'),
-      ),
-    [assets, dim, formatAccount, t],
-  )
+  const allocation = useMemo(() => {
+    const items =
+      dim === 'class'
+        ? assets
+            .filter((node) => Math.abs(node.total) > 0.005)
+            .map((node) => ({ name: formatAccount(node.name), value: Math.abs(node.total) }))
+        : leafItems(assets, formatAccount)
+    return shareItems(items, t('charts.otherLabel'))
+  }, [assets, dim, formatAccount, t])
 
   const incomeTotal = Math.abs(incomeSection?.total ?? 0)
   const expenseTotal = Math.abs(expenses?.total ?? 0)
@@ -475,7 +481,8 @@ export function Charts() {
           >
             <Pie items={allocation.items} top={allocation.top} label={t('charts.topShare')} currency={currency} />
             <p className="text-xs text-muted-foreground">
-              {t('charts.effective')} {allocation.effective.toFixed(1)}
+              {t(dim === 'class' ? 'charts.effectiveClasses' : 'charts.effectiveAccounts')}{' '}
+              {allocation.effective.toFixed(1)}
             </p>
           </ChartFrame>
 
