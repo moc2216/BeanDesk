@@ -4,9 +4,9 @@ import type { EChartsOption } from 'echarts'
 export const CHART_COLORS = [
   '#4f6ef7',
   '#12a594',
-  '#e8a317',
+  '#b45309',
   '#8e4ec6',
-  '#0ea5e9',
+  '#0284c7',
   '#d6409f',
   '#a67c52',
   '#8b8d98',
