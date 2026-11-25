@@ -1,4 +1,4 @@
-import { CalendarDays, Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, ChevronRight, FilterX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { enUS, zhCN } from 'react-day-picker/locale'
@@ -432,12 +432,26 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 }
 
 export function TimeFilterSelector({ className }: { className?: string }) {
-  const { timeFilter, isAllTime } = useTimeFilter()
+  const { timeFilter, clearFilter, isAllTime } = useTimeFilter()
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
+
+      {!isAllTime ? (
+        <Hint label={t('time.clearAll')}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={clearFilter}
+            aria-label={t('time.clearAll')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <FilterX className="size-3.5" aria-hidden />
+          </Button>
+        </Hint>
+      ) : null}
 
       <Hint label={formatPeriodLabel(timeFilter, t)}>
         <Button
