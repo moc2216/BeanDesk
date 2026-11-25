@@ -23,10 +23,11 @@ import { useAccountDisplay } from '@/lib/account-display'
 import { guessInvestmentAccounts, portfolioRows } from '@/lib/portfolio-rows'
 import { loadAccounts, loadTargets, saveAccounts, saveTargets } from '@/lib/portfolio-store'
 import { formatShare } from '@/lib/portfolio'
+import { CHART_COLORS, tooltipStyle } from '@/lib/chart-theme'
 import { useTimeFilter } from '@/lib/time-context'
 import { cn } from '@/lib/utils'
 
-const COLORS = ['#4f8cff', '#f06a9b', '#ffc53d', '#35c8d8', '#f4765a', '#7c6cf0', '#35c88a', '#b08968']
+const COLORS = CHART_COLORS
 
 export function PortfolioView() {
   const { t, formatCurrency } = useI18n()
@@ -86,6 +87,7 @@ export function PortfolioView() {
     }))
     return {
       tooltip: {
+        ...tooltipStyle,
         formatter: (params) => {
           const item = params as { name: string; value: number }
           return item.name + '<br/>' + formatCurrency(item.value, currency) + ' · ' + formatShare(item.value, total)
@@ -194,14 +196,18 @@ export function PortfolioView() {
                 value: hasTargets ? formatCurrency(toAdjust, currency) : '—',
               },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border bg-card p-4">
-                <div className="text-xs text-muted-foreground">{item.label}</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{item.value}</div>
+              <div key={item.label} className="rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                <div className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                  {item.label}
+                </div>
+                <div className="mt-2 text-[1.7rem] leading-none font-semibold tracking-tight tabular-nums">
+                  {item.value}
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-4 rounded-xl border bg-card p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="relative">
               <Chart option={option} height={340} />
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -282,7 +288,7 @@ export function PortfolioView() {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card p-4">
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">{t('portfolio.rebalance')}</h2>
               {hasTargets ? null : (

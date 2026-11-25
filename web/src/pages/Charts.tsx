@@ -7,13 +7,17 @@ import { PortfolioView } from '@/components/portfolio-view'
 import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
+import { useTheme } from '@/components/theme-provider'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
+import { CHART_COLORS, categoryAxis, tooltipStyle, valueAxis } from '@/lib/chart-theme'
 import { useAccountDisplay } from '@/lib/account-display'
 import { fetchChartData } from '@/lib/chart-series'
 import { useTimeFilter } from '@/lib/time-context'
 import { cn } from '@/lib/utils'
 
-const PALETTE = ['#4f8cff', '#35c88a', '#ffb020', '#ff6b6b', '#a78bfa', '#22d3ee', '#f472b6', '#94a3b8']
+const PALETTE = CHART_COLORS
+const INCOME = '#12a594'
+const EXPENSE = '#e0656b'
 
 function leaf(name: string): string {
   const parts = name.split(':')
@@ -60,7 +64,7 @@ function ChartFrame({
   className?: string
 }) {
   return (
-    <section className={cn('rounded-xl border bg-card p-4', className)}>
+    <section className={cn('rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -75,10 +79,15 @@ function ChartFrame({
 
 function Pie({ items, top, label, currency }: { items: Array<{ name: string; value: number }>; top: number; label: string; currency: string }) {
   const { formatCurrency } = useI18n()
+  const { isDark } = useTheme()
+  const labelColor = isDark ? '#c4c4cc' : '#52525b'
+  const strongColor = isDark ? '#f4f4f5' : '#18181b'
+  const pieTotal = items.reduce((sum, item) => sum + item.value, 0)
   const option = useMemo<echarts.EChartsOption>(
     () => ({
       color: PALETTE,
       tooltip: {
+        ...tooltipStyle,
         formatter: (params) => {
           const item = params as { name: string; value: number; percent: number }
           return item.name + ' ' + formatCurrency(item.value, currency) + ' (' + item.percent.toFixed(1) + '%)'
@@ -89,9 +98,12 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
           type: 'pie',
           radius: ['58%', '82%'],
           itemStyle: { borderWidth: 3, borderColor: 'transparent' },
-          label: { fontSize: 11, formatter: '{b} {d}%' },
+          label: { fontSize: 10, color: labelColor, formatter: '{b} {d}%' },
           labelLayout: { hideOverlap: true },
-          data: items,
+          data: items.map((item) => {
+            const show = pieTotal > 0 && item.value / pieTotal >= 0.04
+            return { ...item, label: { show }, labelLine: { show } }
+          }),
         },
       ],
       title: {
@@ -99,11 +111,11 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
         subtext: label,
         left: 'center',
         top: '40%',
-        textStyle: { fontSize: 24, fontWeight: 600 },
-        subtextStyle: { fontSize: 11 },
+        textStyle: { fontSize: 24, fontWeight: 600, color: strongColor },
+        subtextStyle: { fontSize: 11, color: labelColor },
       },
     }),
-    [items, top, label, currency, formatCurrency],
+    [items, top, label, currency, formatCurrency, labelColor, strongColor],
   )
   return <Chart option={option} height={260} />
 }
@@ -111,18 +123,25 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
 function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }) {
   const { formatCurrency } = useI18n()
   const { format: formatAccount } = useAccountDisplay()
-  const data = visible(nodes).map((node) => ({
+  const { isDark } = useTheme()
+  const data = visible(nodes).map((node, index) => ({
     name: formatAccount(node.name),
     value: Math.abs(node.total),
-    children: visible(node.children).map((child) => ({
+    itemStyle: { color: PALETTE[index % PALETTE.length] },
+    children: visible(node.children).map((child, childIndex) => ({
       name: formatAccount(child.name),
       value: Math.abs(child.total),
+      itemStyle: {
+        color: PALETTE[index % PALETTE.length],
+        opacity: Math.max(0.55, 0.95 - childIndex * 0.08),
+      },
     })),
   }))
   const option = useMemo<echarts.EChartsOption>(
     () => ({
       color: PALETTE,
       tooltip: {
+        ...tooltipStyle,
         formatter: (params) => {
           const item = params as { name: string; value: number }
           return item.name + ' ' + formatCurrency(item.value, currency)
@@ -133,14 +152,30 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
           type: 'treemap',
           roam: false,
           breadcrumb: { show: false },
-          upperLabel: { show: true, height: 20, fontSize: 11 },
-          label: { fontSize: 11 },
-          itemStyle: { borderWidth: 1, gapWidth: 2 },
+          upperLabel: {
+            show: true,
+            height: 20,
+            fontSize: 11,
+            color: isDark ? '#f4f4f5' : '#3f3f46',
+            fontWeight: 500,
+          },
+          label: {
+            fontSize: 10,
+            color: '#ffffff',
+            overflow: 'truncate',
+            textShadowColor: 'rgba(0,0,0,0.45)',
+            textShadowBlur: 3,
+          },
+          itemStyle: { color: 'transparent', borderColor: 'transparent', borderWidth: 2, gapWidth: 2 },
+          levels: [
+            { itemStyle: { borderColor: 'transparent', borderWidth: 2, gapWidth: 2 } },
+            { itemStyle: { borderColor: 'transparent', borderWidth: 1, gapWidth: 1 } },
+          ],
           data,
         },
       ],
     }),
-    [data, currency, formatCurrency],
+    [data, currency, formatCurrency, isDark],
   )
   return <Chart option={option} height={280} />
 }
@@ -192,30 +227,22 @@ export function Charts() {
   )
   const money = (value: number) => formatCurrency(Number(value), currency)
 
-  const axisX = (data: string[]) => ({
-    type: 'category' as const,
-    data,
-    axisTick: { show: false },
-    axisLabel: { fontSize: 10, hideOverlap: true },
-  })
-  const axisY = (formatter: (value: number) => string) => ({
-    type: 'value' as const,
-    axisLabel: { fontSize: 10, formatter: (value: number | string) => formatter(Number(value)) },
-  })
+  const axisX = (data: string[]) => categoryAxis(data)
+  const axisY = (formatter: (value: number) => string) => valueAxis(formatter)
 
   const flowsOption = useMemo<echarts.EChartsOption>(
     () => ({
       grid: { left: 88, right: 24, top: 12, bottom: 24 },
       xAxis: { type: 'value', axisLabel: { formatter: (value: number) => formatCurrency(value, currency) } },
       yAxis: { type: 'category', data: [t('charts.expense'), t('charts.income'), t('charts.left')] },
-      tooltip: { trigger: 'axis', valueFormatter: (value) => formatCurrency(Number(value), currency) },
+      tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => formatCurrency(Number(value), currency) },
       series: [
         {
           type: 'bar',
           barMaxWidth: 24,
           data: [
-            { value: expenseTotal, itemStyle: { color: PALETTE[3] } },
-            { value: incomeTotal, itemStyle: { color: PALETTE[1] } },
+            { value: expenseTotal, itemStyle: { color: EXPENSE } },
+            { value: incomeTotal, itemStyle: { color: INCOME } },
             { value: left, itemStyle: { color: PALETTE[0] } },
           ],
         },
@@ -233,7 +260,7 @@ export function Charts() {
   const netWorthOption = useMemo<echarts.EChartsOption>(
     () => ({
       grid: { left: 68, right: 20, top: 16, bottom: 24 },
-      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
       xAxis: axisX(netWorth.map((point) => point.label)),
       yAxis: axisY((value) => compact.format(value)),
       series: [
@@ -261,7 +288,7 @@ export function Charts() {
     () => ({
       grid: { left: 68, right: 20, top: 36, bottom: 24 },
       legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11 } },
-      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
       xAxis: axisX(cashflow.map((point) => point.label)),
       yAxis: axisY((value) => compact.format(value)),
       series: [
@@ -269,14 +296,14 @@ export function Charts() {
           type: 'bar',
           name: t('charts.income'),
           data: cashflow.map((point) => point.income),
-          itemStyle: { color: PALETTE[1] },
+          itemStyle: { color: INCOME },
           barMaxWidth: 14,
         },
         {
           type: 'bar',
           name: t('charts.expense'),
           data: cashflow.map((point) => point.expense),
-          itemStyle: { color: PALETTE[3] },
+          itemStyle: { color: EXPENSE },
           barMaxWidth: 14,
         },
         {
@@ -329,7 +356,7 @@ export function Charts() {
       color: PALETTE,
       grid: { left: 68, right: 20, top: 52, bottom: 24 },
       legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10 }, type: 'scroll' },
-      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
       xAxis: axisX(composition?.points.map((point) => point.label) ?? []),
       yAxis: axisY((value) => compact.format(value)),
       series: (composition?.categories ?? []).map((name, index) => {
@@ -352,7 +379,7 @@ export function Charts() {
   const payeeOption = useMemo<echarts.EChartsOption>(
     () => ({
       grid: { left: 100, right: 36, top: 8, bottom: 24 },
-      tooltip: { trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
+      tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
       xAxis: axisY((value) => compact.format(value)),
       yAxis: {
         type: 'category',
@@ -367,7 +394,7 @@ export function Charts() {
         {
           type: 'bar',
           data: payees.map((payee) => payee.value).reverse(),
-          itemStyle: { color: PALETTE[4] },
+          itemStyle: { color: PALETTE[3] },
           barMaxWidth: 14,
         },
       ],
@@ -394,9 +421,13 @@ export function Charts() {
           { label: t('charts.liabilities'), value: formatCurrency(Math.abs(balance.data?.totals.liabilities ?? 0), currency) },
           { label: t('charts.savingsRate'), value: (savingRate * 100).toFixed(1) + '%' },
         ].map((item) => (
-          <div key={item.label} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{item.label}</div>
-            <div className="mt-1 text-xl font-semibold tabular-nums">{item.value}</div>
+          <div key={item.label} className="rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <div className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+              {item.label}
+            </div>
+            <div className="mt-2 text-[1.7rem] leading-none font-semibold tracking-tight tabular-nums">
+              {item.value}
+            </div>
           </div>
         ))}
       </div>
@@ -452,7 +483,7 @@ export function Charts() {
             <Treemap nodes={expenses?.children ?? []} currency={currency} />
           </ChartFrame>
 
-          <section className="mt-2 flex flex-col gap-4 border-t pt-6 lg:col-span-2">
+          <section className="mt-2 flex flex-col gap-4 rounded-2xl bg-muted/30 p-5 lg:col-span-2">
             <PortfolioView />
           </section>
 
