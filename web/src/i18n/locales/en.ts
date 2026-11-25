@@ -167,6 +167,12 @@ export const en = {
     monthlyFlowsHint: 'Bars are the money in and out each month. The line is what is left over.',
     savingsTrend: 'Savings rate by month',
     savingsTrendHint: 'Share of income kept each month. The dashed line is the average.',
+    portfolio: 'Portfolio diversity',
+    portfolioHint:
+      'Inner ring is the asset class, outer ring the holdings inside it. Pick a group to look inside.',
+    totalHoldings: 'Total holdings',
+    holdingsCount: '{count} holdings',
+    scopeAll: 'All assets',
     composition: 'Spending mix by month',
     compositionHint: 'The five largest classes, stacked. Everything else is grouped as Other.',
     topPayees: 'Top payees',

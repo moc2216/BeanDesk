@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import * as echarts from 'echarts'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
+import { Chart } from '@/components/echart'
+import { PortfolioPanel } from '@/components/portfolio-panel'
 import { ReportWhen } from '@/components/report-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
@@ -44,26 +46,6 @@ function share(nodes: AccountNode[], group: (node: AccountNode) => string, other
   }
 }
 
-function useChart(option: echarts.EChartsOption) {
-  const host = useRef<HTMLDivElement>(null)
-  const chart = useRef<echarts.ECharts | null>(null)
-  useEffect(() => {
-    if (!host.current) return
-    chart.current = echarts.init(host.current, undefined, { renderer: 'canvas' })
-    const observer = new ResizeObserver(() => chart.current?.resize())
-    observer.observe(host.current)
-    return () => {
-      observer.disconnect()
-      chart.current?.dispose()
-      chart.current = null
-    }
-  }, [])
-  useEffect(() => {
-    chart.current?.setOption(option, true)
-  }, [option])
-  return host
-}
-
 function ChartFrame({
   title,
   hint,
@@ -89,11 +71,6 @@ function ChartFrame({
       <div className="mt-3">{children}</div>
     </section>
   )
-}
-
-function Chart({ option, height = 260 }: { option: echarts.EChartsOption; height?: number }) {
-  const host = useChart(option)
-  return <div ref={host} className="w-full" style={{ height }} />
 }
 
 function Pie({ items, top, label, currency }: { items: Array<{ name: string; value: number }>; top: number; label: string; currency: string }) {
@@ -128,8 +105,7 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
     }),
     [items, top, label, currency, formatCurrency],
   )
-  const host = useChart(option)
-  return <div ref={host} className="h-[260px] w-full" />
+  return <Chart option={option} height={260} />
 }
 
 function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }) {
@@ -166,8 +142,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
     }),
     [data, currency, formatCurrency],
   )
-  const host = useChart(option)
-  return <div ref={host} className="h-[280px] w-full" />
+  return <Chart option={option} height={280} />
 }
 
 export function Charts() {
@@ -441,6 +416,20 @@ export function Charts() {
               <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
             ) : (
               <Chart option={netWorthOption} />
+            )}
+          </ChartFrame>
+
+          <ChartFrame
+            title={t('charts.portfolio')}
+            hint={t('charts.portfolioHint')}
+            className="lg:col-span-2"
+          >
+            {seriesPending ? (
+              <Skeleton className="h-[340px] w-full" />
+            ) : assets.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('charts.noSeries')}</p>
+            ) : (
+              <PortfolioPanel nodes={assets} currency={currency} />
             )}
           </ChartFrame>
 
