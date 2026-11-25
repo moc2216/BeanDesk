@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useSearchParams } from 'react-router'
 import {
+  ArrowDownUp,
   FileTextIcon,
   SearchIcon,
   RefreshCwIcon,
@@ -63,6 +64,7 @@ import {
 import { rootNames } from '@/lib/ledger-model'
 import { useTimeFilter } from '@/lib/time-context'
 import { useI18n } from '@/i18n'
+import { formatPeriodLabel } from '@/lib/period-label'
 import { cn } from '@/lib/utils'
 
 export function Journal() {
@@ -78,6 +80,7 @@ export function Journal() {
   const [selectedTag, setSelectedTag] = useState<string | null>(urlTag || null)
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<string>(urlAccount)
   const [selectedTx, setSelectedTx] = useState<TransactionEntry | null>(null)
+  const [dateAsc, setDateAsc] = useState(false)
 
   // Sync state if URL search params change
   useEffect(() => {
@@ -89,7 +92,8 @@ export function Journal() {
     if (pathname !== '/journal') setSelectedTx(null)
   }, [pathname])
 
-  const { timeFilter } = useTimeFilter()
+  const { timeFilter, isAllTime } = useTimeFilter()
+  const periodLabel = isAllTime ? t('time.allTime') : formatPeriodLabel(timeFilter, t)
   const ledger = useQuery({
     queryKey: ['ledger-data'],
     queryFn: ({ signal }) => favaClient.getLedgerData(signal),
@@ -128,7 +132,7 @@ export function Journal() {
   const filtered = useMemo(() => {
     if (!transactions) return []
     const needle = search.toLowerCase()
-    return transactions.filter((tx) => {
+    const result = transactions.filter((tx) => {
       const matchSearch =
         needle === '' ||
         tx.payee.toLowerCase().includes(needle) ||
@@ -142,7 +146,15 @@ export function Journal() {
         tx.postings.some((posting) => accountInRoot(posting.account, selectedAccountFilter))
       return matchSearch && matchTag && matchRoot && matchAccount
     })
-  }, [transactions, search, selectedTag, activeRoot, selectedAccountFilter])
+
+    const rows = [...result]
+    rows.sort((a, b) => {
+      const order = a.date.localeCompare(b.date)
+      const tie = String(a.id).localeCompare(String(b.id))
+      return dateAsc ? order || tie : -(order || tie)
+    })
+    return rows
+  }, [transactions, search, selectedTag, activeRoot, selectedAccountFilter, dateAsc])
 
   const clearDrillFilter = () => {
     setSelectedAccountFilter('')
@@ -230,20 +242,44 @@ export function Journal() {
                 </SelectContent>
               </Select>
             ) : null}
+            <Button variant="outline" onClick={() => setDateAsc((value) => !value)}>
+              <ArrowDownUp data-icon="inline-start" />
+              {dateAsc ? t('journal.oldestFirst') : t('journal.newestFirst')}
+            </Button>
             <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               {isFetching ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
               {t('common.refresh')}
             </Button>
         </div>
       </div>
+      <p className="text-xs text-muted-foreground">
+        {t('charts.filterPeriod')} · {periodLabel}
+      </p>
       {journal?.truncated ? (
         <p className="text-[0.8rem] text-muted-foreground">{t('journal.truncated')}</p>
       ) : null}
       {!isError && !isLoading && filtered.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{t('journal.emptyTitle')}</EmptyTitle>
+            <EmptyTitle>
+              {transactions && transactions.length > 0
+                ? t('journal.emptyFilteredTitle')
+                : t('journal.emptyTitle')}
+            </EmptyTitle>
           </EmptyHeader>
+          {transactions && transactions.length > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch('')
+                setSelectedTag(null)
+                setSelectedRoot('')
+                setSelectedAccountFilter('')
+              }}
+            >
+              {t('journal.emptyFilteredAction')}
+            </Button>
+          ) : null}
         </Empty>
       ) : (
       <div className="overflow-hidden rounded-lg border bg-card">

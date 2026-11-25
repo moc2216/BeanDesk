@@ -568,6 +568,10 @@ export const zhCN = {
   },
 
   journal: {
+    newestFirst: '最新在前',
+    oldestFirst: '最早在前',
+    emptyFilteredTitle: '没有匹配的记录',
+    emptyFilteredAction: '清除筛选',
     title: '日记账',
     drillTitle: '已按会计科目筛选',
     clearFilter: '清除筛选',

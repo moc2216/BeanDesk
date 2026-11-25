@@ -580,6 +580,10 @@ export const en = {
   },
 
   journal: {
+    newestFirst: 'Newest first',
+    oldestFirst: 'Oldest first',
+    emptyFilteredTitle: 'No matching entries',
+    emptyFilteredAction: 'Clear filters',
     title: 'Journal',
     drillTitle: 'Filtered by account',
     clearFilter: 'Clear filter',
