@@ -46,6 +46,9 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 
   const calendarLocale = locale.toLowerCase().startsWith('zh') ? zhCN : enUS
   const activeYear = selectedYear
+  const knownYears = availableYears.map(Number).filter((value) => Number.isFinite(value))
+  const firstYear = knownYears.length ? Math.min(...knownYears) : new Date().getFullYear() - 5
+  const lastYear = Math.max(new Date().getFullYear(), ...knownYears) + 1
 
   useEffect(() => {
     if (!open) return
@@ -224,8 +227,13 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
               onSelect={pickRange}
               numberOfMonths={2}
               locale={calendarLocale}
+              captionLayout="dropdown"
+              navLayout="after"
+              startMonth={new Date(firstYear, 0)}
+              endMonth={new Date(lastYear, 11)}
               className="rounded-lg border"
             />
+            <p className="text-[11px] text-muted-foreground">{t('time.rangeHint')}</p>
 
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="grid gap-1.5">
@@ -278,7 +286,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 export function TimeFilterSelector({ className }: { className?: string }) {
   const { timeFilter, clearFilter, isAllTime } = useTimeFilter()
   const { t } = useI18n()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   return (
     <div className={cn('flex items-center gap-1', className)}>

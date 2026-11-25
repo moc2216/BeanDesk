@@ -54,6 +54,7 @@ export const en = {
     quickFilters: 'Quick filters',
     pickerTitle: 'Accounting period',
     pickerHint: 'Click a start and end day, or use a preset.',
+    rangeHint: 'Pick the start day, then jump to the end month — ranges can cross months and years.',
     clearAll: 'Clear',
     customRange: 'Custom range…',
     customRangeTitle: 'Custom date range',
