@@ -185,6 +185,9 @@ export const zhCN = {
   },
 
   charts: {
+    filterPeriod: '筛选期间',
+    kpiUnavailable: '未取得数据',
+    savingsUndefined: '本期收入为零',
     title: '图表',
     netWorth: '净资产',
     assets: '总资产',

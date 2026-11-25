@@ -72,15 +72,24 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CHF: 'CHF',
 }
 
+const UNIT_DECIMALS: Record<string, number> = {
+  BTC: 8,
+  ETH: 8,
+  SOL: 8,
+  USDT: 2,
+  USDC: 2,
+}
+
 export function formatCurrency(
   value: number,
   currency: string,
   locale: string,
   options: Intl.NumberFormatOptions = {},
 ): string {
-  const maximumFractionDigits = options.maximumFractionDigits ?? 2
+  const unitDigits = UNIT_DECIMALS[currency.toUpperCase()]
+  const maximumFractionDigits = options.maximumFractionDigits ?? unitDigits ?? 2
   const minimumFractionDigits =
-    options.minimumFractionDigits ?? Math.min(2, maximumFractionDigits)
+    options.minimumFractionDigits ?? (unitDigits ? 0 : Math.min(2, maximumFractionDigits))
   let number: string
   try {
     number = new Intl.NumberFormat(locale, {

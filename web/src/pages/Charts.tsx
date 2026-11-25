@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import * as echarts from 'echarts'
-import { Settings2 } from 'lucide-react'
+import { Settings2, TriangleAlertIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Chart } from '@/components/echart'
 import { PortfolioView } from '@/components/portfolio-view'
 import { ReportWhen } from '@/components/report-bar'
@@ -35,9 +36,17 @@ import {
 import { useTheme } from '@/components/theme-provider'
 import type { MessageKey } from '@/i18n/locales/en'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
-import { CHART_COLORS, categoryAxis, tooltipStyle, valueAxis } from '@/lib/chart-theme'
+import {
+  CHART_COLORS,
+  categoryAxis,
+  colorForCategory,
+  expenseKey,
+  tooltipStyle,
+  valueAxis,
+} from '@/lib/chart-theme'
 import { useAccountDisplay } from '@/lib/account-display'
 import { fetchChartData } from '@/lib/chart-series'
+import { formatPeriodLabel } from '@/lib/period-label'
 import { useTimeFilter } from '@/lib/time-context'
 import { cn } from '@/lib/utils'
 
@@ -49,12 +58,12 @@ function visible(nodes: AccountNode[]): AccountNode[] {
   return nodes.filter((node) => Math.abs(node.total) > 0.005)
 }
 
-function shareItems(items: Array<{ name: string; value: number }>, otherLabel: string) {
+function shareItems<T extends { name: string; value: number }>(items: T[], otherLabel: string) {
   items = items.filter((item) => item.value > 0.005).sort((a, b) => b.value - a.value)
   const total = items.reduce((sum, item) => sum + item.value, 0)
-  const kept = items.filter((item) => total > 0 && item.value / total >= 0.01).slice(0, 8)
+  const kept = items.filter((item) => total > 0 && item.value / total >= 0.01).slice(0, 8) as T[]
   const rest = items.filter((item) => !kept.includes(item)).reduce((sum, item) => sum + item.value, 0)
-  if (rest > 0) kept.push({ name: otherLabel, value: rest })
+  if (rest > 0) kept.push({ name: otherLabel, value: rest } as T)
   const hhi = total > 0 ? items.reduce((sum, item) => sum + (item.value / total) ** 2, 0) : 0
   return {
     items: kept,
@@ -110,7 +119,7 @@ function ChartFrame({
   )
 }
 
-function Pie({ items, top, label, currency }: { items: Array<{ name: string; value: number }>; top: number; label: string; currency: string }) {
+function Pie({ items, top, label, currency }: { items: Array<{ name: string; value: number; color?: string }>; top: number; label: string; currency: string }) {
   const { formatCurrency } = useI18n()
   const { isDark } = useTheme()
   const labelColor = isDark ? '#c4c4cc' : '#52525b'
@@ -135,7 +144,12 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
           labelLayout: { hideOverlap: true },
           data: items.map((item) => {
             const show = pieTotal > 0 && item.value / pieTotal >= 0.04
-            return { ...item, label: { show }, labelLine: { show } }
+            return {
+              ...item,
+              ...(item.color ? { itemStyle: { color: item.color } } : {}),
+              label: { show },
+              labelLine: { show },
+            }
           }),
         },
       ],
@@ -157,19 +171,22 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
   const { formatCurrency } = useI18n()
   const { format: formatAccount } = useAccountDisplay()
   const { isDark } = useTheme()
-  const data = visible(nodes).map((node, index) => ({
-    name: formatAccount(node.name),
-    value: Math.abs(node.total),
-    itemStyle: { color: PALETTE[index % PALETTE.length] },
-    children: visible(node.children).map((child, childIndex) => ({
-      name: formatAccount(child.name),
-      value: Math.abs(child.total),
-      itemStyle: {
-        color: PALETTE[index % PALETTE.length],
-        opacity: Math.max(0.55, 0.95 - childIndex * 0.08),
-      },
-    })),
-  }))
+  const data = visible(nodes).map((node) => {
+    const color = colorForCategory(expenseKey(node.name))
+    return {
+      name: formatAccount(node.name),
+      value: Math.abs(node.total),
+      itemStyle: { color },
+      children: visible(node.children).map((child, childIndex) => ({
+        name: formatAccount(child.name),
+        value: Math.abs(child.total),
+        itemStyle: {
+          color,
+          opacity: Math.max(0.55, 0.95 - childIndex * 0.08),
+        },
+      })),
+    }
+  })
   const option = useMemo<echarts.EChartsOption>(
     () => ({
       color: PALETTE,
@@ -242,8 +259,10 @@ export function Charts() {
         totals.set(key, (totals.get(key) ?? 0) + Math.abs(node.total))
       }
       items = ASSET_CLASSES.map((key) => ({
+        key: 'assetClass:' + key,
         name: t(('charts.assetClasses.' + key) as MessageKey),
         value: totals.get(key) ?? 0,
+        color: colorForCategory('assetClass:' + key),
       }))
     } else if (dim === 'group') {
       items = visibleAssets.map((node) => ({ name: formatAccount(node.name), value: Math.abs(node.total) }))
@@ -413,7 +432,12 @@ export function Charts() {
           name: last && merged > 0 ? t('charts.otherBuckets', { count: merged }) : formatAccount(name),
           stack: 'spend',
           data: (composition?.points ?? []).map((point) => point.values[index] ?? 0),
-          itemStyle: { color: PALETTE[index % PALETTE.length] },
+          itemStyle: {
+            color:
+              last && merged > 0
+                ? colorForCategory('rollup:other')
+                : colorForCategory(expenseKey(name)),
+          },
           barMaxWidth: 18,
         }
       }),
@@ -478,29 +502,70 @@ export function Charts() {
 
   const seriesPending = series.isPending
   const seriesFailed = series.isError
+  const savingsUndefined = !loading && !failed && incomeTotal <= 0
+  const unconverted = [
+    ...(balance.data?.unconverted_currencies ?? []),
+    ...(income.data?.unconverted_currencies ?? []),
+  ].filter((value, index, all) => all.indexOf(value) === index)
+  const kpiItems = [
+    { label: t('charts.netWorth'), value: balance.data ? formatCurrency(net, currency) : null },
+    {
+      label: t('charts.assets'),
+      value: balance.data ? formatCurrency(balance.data.totals.assets, currency) : null,
+    },
+    {
+      label: t('charts.liabilities'),
+      value: balance.data
+        ? formatCurrency(Math.abs(balance.data.totals.liabilities), currency)
+        : null,
+    },
+    {
+      label: t('charts.savingsRate'),
+      value: savingsUndefined ? null : (savingRate * 100).toFixed(1) + '%',
+      note: savingsUndefined ? t('charts.savingsUndefined') : undefined,
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-lg font-semibold">{t('charts.title')}</h1>
+        <div>
+          <h1 className="text-lg font-semibold">{t('charts.title')}</h1>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {t('charts.filterPeriod')} ·{' '}
+            {isAllTime ? t('time.allTime') : formatPeriodLabel(timeFilter, t)}
+          </div>
+        </div>
         <ReportWhen currency={currency}>
           {balance.data?.as_of ? formatDate(balance.data.as_of) : null}
         </ReportWhen>
       </div>
+
+      {unconverted.length > 0 ? (
+        <Alert variant="warning">
+          <TriangleAlertIcon />
+          <AlertTitle>{t('balanceSheet.unconvertedTitle')}</AlertTitle>
+          <AlertDescription>
+            {t('balanceSheet.unconvertedBody', {
+              currency,
+              currencies: unconverted.join(', '),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: t('charts.netWorth'), value: formatCurrency(net, currency) },
-          { label: t('charts.assets'), value: formatCurrency(balance.data?.totals.assets ?? 0, currency) },
-          { label: t('charts.liabilities'), value: formatCurrency(Math.abs(balance.data?.totals.liabilities ?? 0), currency) },
-          { label: t('charts.savingsRate'), value: (savingRate * 100).toFixed(1) + '%' },
-        ].map((item) => (
+        {kpiItems.map((item) => (
           <div key={item.label} className="rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-            <div className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-              {item.label}
+            <div className="text-xs text-muted-foreground">{item.label}</div>
+            <div className="mt-2 text-2xl leading-8 font-semibold tracking-tight tabular-nums">
+              {item.value ?? '—'}
             </div>
-            <div className="mt-2 text-[1.7rem] leading-none font-semibold tracking-tight tabular-nums">
-              {item.value}
-            </div>
+            {failed ? (
+              <div className="mt-1 text-[11px] text-muted-foreground">{t('charts.kpiUnavailable')}</div>
+            ) : item.note ? (
+              <div className="mt-1 text-[11px] text-muted-foreground">{item.note}</div>
+            ) : null}
           </div>
         ))}
       </div>

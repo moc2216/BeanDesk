@@ -182,6 +182,9 @@ export const en = {
   },
 
   charts: {
+    filterPeriod: 'Period',
+    kpiUnavailable: 'No data',
+    savingsUndefined: 'No income this period',
     title: 'Charts',
     netWorth: 'Net worth',
     assets: 'Assets',
