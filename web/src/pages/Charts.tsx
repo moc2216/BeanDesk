@@ -191,7 +191,7 @@ export function Charts() {
   const currency = balance.data?.operating_currency ?? income.data?.operating_currency ?? 'CNY'
 
   const series = useQuery({
-    queryKey: ['charts-series', currency],
+    queryKey: ['charts-series', currency, locale],
     enabled: !loading && !failed && Boolean(currency),
     queryFn: ({ signal }) => fetchChartData(currency, t('charts.otherLabel'), signal),
   })
