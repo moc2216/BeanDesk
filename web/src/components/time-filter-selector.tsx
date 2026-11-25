@@ -91,6 +91,12 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
       onOpenChange(false)
       return
     }
+    if (!start && !end) {
+      // No explicit range: all data is the default.
+      clearFilter()
+      onOpenChange(false)
+      return
+    }
     if (!start || !end || start > end) {
       setInvalid(true)
       return
@@ -100,7 +106,8 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   }
 
   function clearDraft() {
-    setPending(null)
+    // No explicit period means all data; apply then clears the filter and closes.
+    setPending('')
     setRange(undefined)
     setStart('')
     setEnd('')
@@ -250,7 +257,9 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={apply} disabled={pending === null && (!start || !end)}>
+          <Button
+            onClick={apply}
+          >
             {t('time.applyRange')}
           </Button>
         </DialogFooter>
@@ -262,7 +271,7 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 export function TimeFilterSelector({ className }: { className?: string }) {
   const { timeFilter, clearFilter, isAllTime } = useTimeFilter()
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
