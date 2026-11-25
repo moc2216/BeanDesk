@@ -79,6 +79,7 @@ function walkTrial(
       indent(depth, displayAccountName(node.name)),
       sides.debit === 0 ? '' : money(sides.debit, currency),
       sides.credit === 0 ? '' : money(sides.credit, currency),
+      node.account,
     ])
     rows.push(...walkTrial(node.children, debitNormal, depth + 1, money, currency))
   }
@@ -102,15 +103,21 @@ export function trialCsvTable(
       t('trialBalance.sectionTotal', { name }),
       section.debit === 0 ? '' : money(section.debit, currency),
       section.credit === 0 ? '' : money(section.credit, currency),
+      '',
     ])
   }
-  rows.push([t('trialBalance.debitTotal'), money(data.totals.totalDebits, currency), ''])
-  rows.push([t('trialBalance.creditTotal'), '', money(data.totals.totalCredits, currency)])
+  rows.push([t('trialBalance.debitTotal'), money(data.totals.totalDebits, currency), '', ''])
+  rows.push([t('trialBalance.creditTotal'), '', money(data.totals.totalCredits, currency), ''])
   if (!data.totals.balanced) {
-    rows.push([t('trialBalance.netImbalance'), money(data.totals.netImbalance, currency), ''])
+    rows.push([t('trialBalance.netImbalance'), money(data.totals.netImbalance, currency), '', ''])
   }
   return {
-    headers: [t('balanceSheet.account'), t('trialBalance.debitColumn'), t('trialBalance.creditColumn')],
+    headers: [
+      t('balanceSheet.account'),
+      t('trialBalance.debitColumn'),
+      t('trialBalance.creditColumn'),
+      t('common.accountPath'),
+    ],
     rows,
   }
 }
@@ -132,7 +139,7 @@ function walkBalance(
       : node.name === 'Earnings'
         ? t('balanceSheet.earnings')
         : displayAccountName(node.name)
-    rows.push([t(BALANCE_SECTION[section]), indent(depth, title), money(value, currency)])
+    rows.push([t(BALANCE_SECTION[section]), indent(depth, title), money(value, currency), node.account])
     rows.push(...walkBalance(node.children, section, depth + 1, money, currency, t))
   }
   return rows
@@ -151,16 +158,22 @@ export function balanceCsvTable(
   const assets = presentBalance('assets', data.totals.assets)
   const liabilities = presentBalance('liabilities', data.totals.liabilities)
   const equity = presentBalance('equity', data.totals.equity)
-  rows.push([t('balanceSheet.totalAssets'), '', money(assets, currency)])
-  rows.push([t('balanceSheet.totalLiabilities'), '', money(liabilities, currency)])
-  rows.push([t('balanceSheet.totalEquity'), '', money(equity, currency)])
+  rows.push([t('balanceSheet.totalAssets'), '', money(assets, currency), ''])
+  rows.push([t('balanceSheet.totalLiabilities'), '', money(liabilities, currency), ''])
+  rows.push([t('balanceSheet.totalEquity'), '', money(equity, currency), ''])
   rows.push([
     t('balanceSheet.totalLiabilitiesAndEquity'),
     '',
     money(liabilities + equity, currency),
+    '',
   ])
   return {
-    headers: [t('common.section'), t('balanceSheet.account'), t('balanceSheet.amount')],
+    headers: [
+      t('common.section'),
+      t('balanceSheet.account'),
+      t('balanceSheet.amount'),
+      t('common.accountPath'),
+    ],
     rows,
   }
 }
@@ -187,6 +200,7 @@ function walkIncome(
         comparing ? money(prior, currency) : undefined,
         comparing ? signed(current - prior, currency) : undefined,
       ),
+      node.account,
     ])
     rows.push(...walkIncome(node.children, section, depth + 1, comparing, money, signed, currency))
   }
@@ -224,6 +238,7 @@ export function incomeCsvTable(
         comparing ? money(priorRevenue, currency) : undefined,
         comparing ? signed(revenue - priorRevenue, currency) : undefined,
       ),
+      '',
     ],
     ...walkIncome(expenses.nodes, 'expenses', 0, comparing, money, signed, currency).map((row) => [
       t('income.expensesTitle'),
@@ -238,6 +253,7 @@ export function incomeCsvTable(
         comparing ? money(priorExpense, currency) : undefined,
         comparing ? signed(expenseTotal - priorExpense, currency) : undefined,
       ),
+      '',
     ],
     [
       t('income.expensesTitle'),
@@ -248,6 +264,7 @@ export function incomeCsvTable(
         comparing ? signed(priorProfit, currency) : undefined,
         comparing ? signed(profit - priorProfit, currency) : undefined,
       ),
+      '',
     ],
   ]
   return {
@@ -255,6 +272,7 @@ export function incomeCsvTable(
       t('common.section'),
       t('balanceSheet.account'),
       ...periodHeaders(t, comparing, currentLabel, priorLabel),
+      t('common.accountPath'),
     ],
     rows,
   }
@@ -279,7 +297,7 @@ export function cashFlowCsvTable(
       if (!comparison) {
         const current = presentedLineAmount(line.id, data.lines[line.id])
         if (current === 0) continue
-        rows.push([sectionLabel, t(line.label), money(current, currency)])
+        rows.push([sectionLabel, t(line.label), money(current, currency), ''])
         continue
       }
       const amounts = comparison.lines[line.id]
@@ -292,6 +310,7 @@ export function cashFlowCsvTable(
         money(current, currency),
         money(prior, currency),
         signed(current - prior, currency),
+        '',
       ])
     }
     const currentNet = comparison ? comparison.sections[section].current : data.sections[section]
@@ -304,6 +323,7 @@ export function cashFlowCsvTable(
         comparison ? signed(comparison.sections[section].prior, currency) : undefined,
         comparison ? signed(currentNet - comparison.sections[section].prior, currency) : undefined,
       ),
+      '',
     ])
   }
 
@@ -324,6 +344,7 @@ export function cashFlowCsvTable(
         comparing ? signed(row.prior, currency) : undefined,
         comparing ? signed(row.current - row.prior, currency) : undefined,
       ),
+      row.account,
     ])
   }
   const unassignedCurrent = comparison ? comparison.unassignedTotal.current : data.unassignedTotal
@@ -337,6 +358,7 @@ export function cashFlowCsvTable(
         comparison ? signed(comparison.unassignedTotal.prior, currency) : undefined,
         comparison ? signed(unassignedCurrent - comparison.unassignedTotal.prior, currency) : undefined,
       ),
+      '',
     ])
   }
 
@@ -350,6 +372,7 @@ export function cashFlowCsvTable(
       comparison ? signed(comparison.net.prior, currency) : undefined,
       comparison ? signed(netCurrent - comparison.net.prior, currency) : undefined,
     ),
+    '',
   ])
 
   return {
@@ -357,6 +380,7 @@ export function cashFlowCsvTable(
       t('common.section'),
       t('cashFlow.item'),
       ...periodHeaders(t, comparing, currentLabel, priorLabel),
+      t('common.accountPath'),
     ],
     rows,
   }

@@ -14,6 +14,7 @@ export const en = {
     rangeJoiner: 'to',
     exportCsv: 'Export CSV',
     section: 'Section',
+    accountPath: 'Account path',
     errorFallback: 'No usable data returned',
     cancel: 'Cancel',
     confirm: 'Confirm',
@@ -126,6 +127,12 @@ export const en = {
     unconvertedTitle: 'Missing exchange rates for foreign currencies',
     unconvertedBody:
       'Missing exchange rates from {currencies} to operating currency {currency}; accounts remain in original currency.',
+  },
+
+  accountDisplay: {
+    label: 'Account names',
+    localized: 'Chinese labels',
+    raw: 'Full account paths',
   },
 
   charts: {

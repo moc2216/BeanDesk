@@ -8,6 +8,7 @@ import { BrandMark } from '@/components/brand-mark'
 import { LedgerErrors } from '@/components/ledger-errors'
 import { PolicyBanner } from '@/components/policy-banner'
 import { StartupLoading, useStartupScreen } from '@/components/startup-loading'
+import { AccountDisplayToggle } from '@/components/account-display-toggle'
 import { TimeFilterSelector } from '@/components/time-filter-selector'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -184,6 +185,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            <AccountDisplayToggle />
             <TimeFilterSelector />
             <NavLink
               to="/calendar"

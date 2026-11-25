@@ -52,7 +52,7 @@ import {
   type PostingItem,
   type TransactionEntry,
 } from '@/lib/api'
-import { displayAccountName } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
 import { explainFavaError } from '@/lib/fava-error'
 import { favaClient } from '@/lib/fava-client'
 import {
@@ -422,6 +422,7 @@ function TagList({ tags }: { tags: string[] }) {
 
 function PostingStack({ postings }: { postings: PostingItem[] }) {
   const { formatCurrency } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {postings.map((posting, index) => {
@@ -436,7 +437,7 @@ function PostingStack({ postings }: { postings: PostingItem[] }) {
             )}
           >
             <OneLine
-              text={displayAccountName(posting.account)}
+              text={formatAccount(posting.account)}
               detail={posting.account}
               className="text-xs text-muted-foreground"
             />

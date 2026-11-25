@@ -19,6 +19,7 @@ export const zhCN = {
     rangeJoiner: '至',
     exportCsv: '导出 CSV',
     section: '类别',
+    accountPath: '账户路径',
     errorFallback: '未获取到可用数据',
     cancel: '取消',
     confirm: '确定',
@@ -129,6 +130,12 @@ export const zhCN = {
     empty: '当前账本暂无数据',
     unconvertedTitle: '部分外币余额缺少折算汇率',
     unconvertedBody: '缺少 {currencies} 兑换本位币 {currency} 的汇率，相关科目按原币呈现。',
+  },
+
+  accountDisplay: {
+    label: '账户名称',
+    localized: '中文名',
+    raw: '完整账户路径',
   },
 
   charts: {

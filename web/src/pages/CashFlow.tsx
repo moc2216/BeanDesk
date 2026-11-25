@@ -37,7 +37,7 @@ import {
 import { priorPeriod } from '@/lib/ledger-model'
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
-import { displayAccountName } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { shownPrior, useShownTime } from '@/lib/shown-time'
 import { cashFlowCsvTable } from '@/lib/statement-csv'
@@ -100,19 +100,20 @@ function Statement({
   priorLabel: string
 }) {
   const { t, formatCurrency, formatSignedCurrency } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const currency = data.operating_currency
   const comparing = comparison != null
   const unassignedRows = comparison
     ? comparison.unassigned.map((row) => ({
         key: row.account,
-        label: displayAccountName(row.account),
+        label: formatAccount(row.account),
         amount: formatSignedCurrency(row.current, currency),
         prior: formatSignedCurrency(row.prior, currency),
         delta: formatSignedCurrency(row.current - row.prior, currency),
       }))
     : data.unassigned.map((row) => ({
         key: row.account,
-        label: displayAccountName(row.account),
+        label: formatAccount(row.account),
         amount: formatSignedCurrency(row.amount, currency),
       }))
   const netCurrent = comparison ? comparison.net.current : data.net

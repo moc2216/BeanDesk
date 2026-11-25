@@ -10,6 +10,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/components/theme-provider'
 import { WarmMainWindow } from '@/components/warm-main-window'
 import { I18nProvider } from '@/i18n'
+import { AccountDisplayProvider } from '@/lib/account-display'
 import { TimeFilterProvider } from '@/lib/time-context'
 import { Calendar } from '@/pages/Calendar'
 import { Settings } from '@/pages/Settings'
@@ -29,6 +30,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">
         <I18nProvider>
+          <AccountDisplayProvider>
           <WarmMainWindow />
           <AppUpdate>
           <TimeFilterProvider>
@@ -50,6 +52,7 @@ export default function App() {
             </TooltipProvider>
           </TimeFilterProvider>
           </AppUpdate>
+          </AccountDisplayProvider>
         </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>

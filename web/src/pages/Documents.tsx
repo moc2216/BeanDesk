@@ -31,11 +31,13 @@ import { useI18n } from '@/i18n'
 import { fetchDocuments, type LedgerDocument } from '@/lib/api'
 import { dateInPeriod } from '@/lib/ledger-model'
 import { explainFavaError } from '@/lib/fava-error'
-import { displayAccountName, fileLeaf } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
+import { fileLeaf } from '@/lib/format'
 import { useTimeFilter } from '@/lib/time-context'
 
 export function Documents() {
   const { t, formatDate } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const { timeFilter } = useTimeFilter()
   const [search, setSearch] = useState('')
   const { pathname } = useLocation()
@@ -127,7 +129,9 @@ export function Documents() {
                   </CardAction>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-muted-foreground">{displayAccountName(doc.account)}</p>
+                  <p className="text-xs text-muted-foreground" title={doc.account}>
+                    {formatAccount(doc.account)}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -151,7 +155,7 @@ export function Documents() {
                     onClick={() => showDocument(doc)}
                   >
                     <TableCell className="font-mono">{formatDate(doc.date)}</TableCell>
-                    <TableCell>{displayAccountName(doc.account)}</TableCell>
+                    <TableCell title={doc.account}>{formatAccount(doc.account)}</TableCell>
                     <TableCell className="overflow-hidden">
                       <OneLine text={fileLeaf(doc.filename)} />
                     </TableCell>
@@ -185,7 +189,7 @@ export function Documents() {
               <DialogHeader className="min-w-0 pr-8">
                 <DialogTitle className="truncate">{fileLeaf(selected.filename)}</DialogTitle>
                 <DialogDescription>
-                  {formatDate(selected.date)} · {displayAccountName(selected.account)}
+                  {formatDate(selected.date)} · {formatAccount(selected.account)}
                 </DialogDescription>
               </DialogHeader>
               <LinkedDocument filename={selected.filename} />

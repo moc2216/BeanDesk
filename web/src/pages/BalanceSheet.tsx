@@ -33,7 +33,8 @@ import {
 } from '@/lib/api'
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
-import { displayAccountName, presentBalance } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
+import { presentBalance } from '@/lib/format'
 import { visibleAccount } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -87,10 +88,11 @@ function defaultExpanded(sections: BalanceSheetSection[]): Set<string> {
 function accountTitle(
   node: AccountNode,
   t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+  formatAccount: (account: string) => string,
 ): string {
   if (node.label_key) return t('balanceSheet.unclosedEarnings')
   if (node.name === 'Earnings') return t('balanceSheet.earnings')
-  return displayAccountName(node.name)
+  return formatAccount(node.name)
 }
 
 function LineRow({
@@ -105,14 +107,16 @@ function LineRow({
   onToggle: (account: string) => void
 }) {
   const { t, formatCurrency } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const value = presentBalance(section, line.node.total)
-  const title = accountTitle(line.node, t)
+  const title = accountTitle(line.node, t, formatAccount)
 
   return (
     <TableRow>
       <TableCell className="whitespace-normal">
         <span
           className="flex min-w-0 items-center gap-1"
+          title={line.node.account}
           style={{ paddingInlineStart: `${line.depth * 1.25}rem` }}
         >
           {line.hasChildren ? (

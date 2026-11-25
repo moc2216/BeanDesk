@@ -219,12 +219,13 @@ export function payeeRowsQuery(currency: string): string {
 export async function fetchChartData(
   currency: string,
   otherLabel: string,
+  time?: string,
   signal?: AbortSignal,
 ): Promise<ChartData> {
   const [flows, payees, report] = await Promise.all([
-    runBQLQuery(monthlyRowsQuery(currency), undefined, signal),
-    runBQLQuery(payeeRowsQuery(currency), undefined, signal),
-    favaClient.getBalanceSheet(undefined, currency, signal),
+    runBQLQuery(monthlyRowsQuery(currency), time, signal),
+    runBQLQuery(payeeRowsQuery(currency), time, signal),
+    favaClient.getBalanceSheet(time, currency, signal),
   ])
   const cashflow = fillCashflowGaps(buildCashflow(flows.rows ?? [], currency))
   const axis = cashflow.map((point) => point.key)

@@ -37,8 +37,9 @@ describe('incomeCsvTable', () => {
       '2026',
       '2025',
       'compare.delta',
+      'common.accountPath',
     ])
-    expect(table.rows[0]).toEqual(['income.revenueTitle', '咨询', '100', '40', '60'])
+    expect(table.rows[0]).toEqual(['income.revenueTitle', '咨询', '100', '40', '60', 'Income:A'])
     const csv = formatCsv(['Studio', 'CNY', '2026', 'Income'], table.headers, table.rows)
     expect(csv.startsWith('# Studio\n# CNY\n# 2026\n# Income\n')).toBe(true)
     expect(csv).toContain('"2026","2025","compare.delta"')

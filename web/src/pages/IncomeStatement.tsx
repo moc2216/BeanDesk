@@ -37,7 +37,8 @@ import {
 import { compareAccounts, priorPeriod, visibleCompared, type ComparedAccount } from '@/lib/ledger-model'
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
-import { displayAccountName, presentIncome } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
+import { presentIncome } from '@/lib/format'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime, shownPrior } from '@/lib/shown-time'
 import { incomeCsvTable } from '@/lib/statement-csv'
@@ -100,7 +101,8 @@ function LineRow({
   onToggle: (account: string) => void
 }) {
   const { t, formatCurrency, formatSignedCurrency } = useI18n()
-  const title = displayAccountName(line.node.name)
+  const { format: formatAccount } = useAccountDisplay()
+  const title = formatAccount(line.node.name)
   const current = presentIncome(section, line.node.current)
   const prior = presentIncome(section, line.node.prior)
 
@@ -109,6 +111,7 @@ function LineRow({
       <TableCell>
         <span
           className="flex items-center gap-1"
+          title={line.node.account}
           style={{ paddingInlineStart: `${line.depth * 1.25}rem` }}
         >
           {line.hasChildren ? (

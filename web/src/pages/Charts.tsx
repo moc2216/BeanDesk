@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
 import { fetchChartData } from '@/lib/chart-series'
+import { useTimeFilter } from '@/lib/time-context'
 import { cn } from '@/lib/utils'
 
 const PALETTE = ['#4f8cff', '#35c88a', '#ffb020', '#ff6b6b', '#a78bfa', '#22d3ee', '#f472b6', '#94a3b8']
@@ -166,8 +167,10 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
 
 export function Charts() {
   const { t, locale, formatCurrency, formatDate } = useI18n()
-  const balance = useQuery({ queryKey: ['charts-balance'], queryFn: ({ signal }) => fetchBalanceSheet(undefined, signal) })
-  const income = useQuery({ queryKey: ['charts-income'], queryFn: ({ signal }) => fetchIncomeStatement(undefined, signal) })
+  const { timeFilter, isAllTime } = useTimeFilter()
+  const time = isAllTime ? undefined : timeFilter
+  const balance = useQuery({ queryKey: ['charts-balance', time], queryFn: ({ signal }) => fetchBalanceSheet(time, signal) })
+  const income = useQuery({ queryKey: ['charts-income', time], queryFn: ({ signal }) => fetchIncomeStatement(time, signal) })
   const [dim, setDim] = useState<'class' | 'account'>('class')
 
   const loading = balance.isPending || income.isPending
@@ -191,9 +194,9 @@ export function Charts() {
   const currency = balance.data?.operating_currency ?? income.data?.operating_currency ?? 'CNY'
 
   const series = useQuery({
-    queryKey: ['charts-series', currency, locale],
+    queryKey: ['charts-series', currency, locale, time],
     enabled: !loading && !failed && Boolean(currency),
-    queryFn: ({ signal }) => fetchChartData(currency, t('charts.otherLabel'), signal),
+    queryFn: ({ signal }) => fetchChartData(currency, t('charts.otherLabel'), time, signal),
   })
 
   const compact = useMemo(

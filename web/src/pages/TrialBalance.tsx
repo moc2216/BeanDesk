@@ -35,7 +35,8 @@ import { useI18n } from '@/i18n'
 import { fetchTrialBalance, type AccountNode, type TrialBalanceSection } from '@/lib/api'
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
-import { displayAccountName } from '@/lib/format'
+import { useAccountDisplay } from '@/lib/account-display'
+import { accountHaystack } from '@/lib/account-search'
 import { isDebitNormal, splitSignedBalance, visibleAccount, type TrialBalanceRoot } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -61,8 +62,7 @@ interface FlatRow {
 }
 
 function matches(node: AccountNode, term: string): boolean {
-  const haystack = `${node.account} ${node.name}`.toLowerCase()
-  return haystack.includes(term)
+  return accountHaystack(node.account, node.name).includes(term)
 }
 
 function flatten(
@@ -148,13 +148,15 @@ function LineRow({
   onToggle: (account: string) => void
 }) {
   const { t, formatCurrency } = useI18n()
-  const title = displayAccountName(row.node.name)
+  const { format: formatAccount } = useAccountDisplay()
+  const title = formatAccount(row.node.name)
 
   return (
     <TableRow>
       <TableCell className="whitespace-normal">
         <span
           className="flex min-w-0 items-center gap-1"
+          title={row.node.account}
           style={{ paddingInlineStart: `${row.depth * 1.25}rem` }}
         >
           {row.hasChildren ? (
@@ -208,6 +210,7 @@ function Statement({
   setExpanded: (next: Set<string> | ((current: Set<string>) => Set<string>)) => void
 }) {
   const { t, formatCurrency, formatSignedCurrency } = useI18n()
+  const { format: formatAccount } = useAccountDisplay()
   const currency = data.operating_currency
   const term = searchTerm.trim().toLowerCase()
 
@@ -268,7 +271,7 @@ function Statement({
               {side.map(({ section, rows }) => {
                 const name = section.root
                   ? t(TRIAL_ROOT_TITLE[section.root])
-                  : displayAccountName(section.rootAccount)
+                  : formatAccount(section.rootAccount)
                 return (
                   <section key={section.rootAccount} className="flex min-w-0 flex-col gap-2">
                     <h2 className="text-[0.8rem] font-medium">{name}</h2>
