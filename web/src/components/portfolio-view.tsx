@@ -47,7 +47,7 @@ export function PortfolioView() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [targetOpen, setTargetOpen] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [pickerDraft, setPickerDraft] = useState<string[]>([])
+  const [pickerDraft, setPickerDraft] = useState<string[]>(() => loadAccounts() ?? [])
   const [targetDraft, setTargetDraft] = useState<Record<string, string>>(() => {
     const saved = loadTargets()
     return Object.fromEntries(Object.entries(saved).map(([key, value]) => [key, String(value)]))
@@ -333,6 +333,29 @@ export function PortfolioView() {
             <DialogTitle>{t('portfolio.accountsTitle')}</DialogTitle>
             <DialogDescription>{t('portfolio.accountsHint')}</DialogDescription>
           </DialogHeader>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">
+              {t('portfolio.selected', { count: pickerDraft.length })}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => setPickerDraft(candidates.map((node) => node.account))}
+                disabled={pickerDraft.length === candidates.length}
+              >
+                {t('portfolio.selectAll')}
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => setPickerDraft([])}
+                disabled={pickerDraft.length === 0}
+              >
+                {t('portfolio.clearAll')}
+              </Button>
+            </div>
+          </div>
           <div className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
             {candidates.map((node) => {
               const checked = pickerDraft.includes(node.account)

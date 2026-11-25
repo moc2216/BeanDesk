@@ -22,10 +22,10 @@ export const REPORT_PAGES: Array<{
   { path: '/balance-sheet', key: 'balanceSheet.title', icon: Landmark, Page: BalanceSheet },
   { path: '/income-statement', key: 'income.title', icon: FileSpreadsheet, Page: IncomeStatement },
   { path: '/cash-flow', key: 'cashFlow.title', icon: Banknote, Page: CashFlow },
+  { path: '/charts', key: 'charts.title', icon: ChartPie, Page: Charts },
   { path: '/journal', key: 'journal.title', icon: BookOpen, Page: Journal },
   { path: '/documents', key: 'documents.title', navKey: 'documents.nav', icon: Archive, Page: Documents },
   { path: '/query', key: 'query.title', icon: Terminal, Page: QueryPlayground },
-  { path: '/charts', key: 'charts.title', icon: ChartPie, Page: Charts },
 ]
 
 export function navLabelKey(page: (typeof REPORT_PAGES)[number]): MessageKey {
