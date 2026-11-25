@@ -35,15 +35,17 @@ function fromISO(value: string): Date | undefined {
 }
 
 function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { timeFilter, setTimeFilter, availableYears, clearFilter, isAllTime } = useTimeFilter()
+  const { timeFilter, setTimeFilter, availableYears, clearFilter } = useTimeFilter()
   const { t, locale } = useI18n()
   const [range, setRange] = useState<DateRange | undefined>(undefined)
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [invalid, setInvalid] = useState(false)
+  const [pending, setPending] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState(Number(availableYears[0] ?? new Date().getFullYear()))
 
   const calendarLocale = locale.toLowerCase().startsWith('zh') ? zhCN : enUS
-  const activeYear = range?.from?.getFullYear() ?? Number(availableYears[0] ?? new Date().getFullYear())
+  const activeYear = selectedYear
 
   useEffect(() => {
     if (!open) return
@@ -54,11 +56,16 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     setStart(current?.start ?? '')
     setEnd(current?.end ?? '')
     setInvalid(false)
-    // Only resync when the panel opens; preset clicks close it immediately.
+    const preset = current ? null : timeFilter || ''
+    setPending(preset)
+    const parsedYear = Number((preset ?? '').slice(0, 4))
+    setSelectedYear(parsedYear > 1900 ? parsedYear : Number(availableYears[0] ?? new Date().getFullYear()))
+    // Only resync when the panel opens; choosing a preset no longer closes it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   function pickRange(next: DateRange | undefined) {
+    setPending(null)
     setRange(next)
     setStart(next?.from ? toISO(next.from) : '')
     setEnd(next?.to ? toISO(next.to) : '')
@@ -72,21 +79,23 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
     setEnd(nextEnd)
     const from = fromISO(nextStart)
     const to = fromISO(nextEnd)
+    setPending(null)
     setRange(from ? { from, to } : undefined)
     setInvalid(false)
   }
 
   function apply() {
+    if (pending !== null) {
+      if (pending === '') clearFilter()
+      else setTimeFilter(pending)
+      onOpenChange(false)
+      return
+    }
     if (!start || !end || start > end) {
       setInvalid(true)
       return
     }
     setTimeFilter(start + ' - ' + end)
-    onOpenChange(false)
-  }
-
-  function preset(value: string) {
-    setTimeFilter(value)
     onOpenChange(false)
   }
 
@@ -100,7 +109,10 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent
+        className="sm:max-w-3xl"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{t('time.pickerTitle')}</DialogTitle>
           <DialogDescription>{t('time.pickerHint')}</DialogDescription>
@@ -109,13 +121,13 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
         <div className="grid gap-4 sm:grid-cols-[190px_minmax(0,1fr)]">
           <div className="flex flex-col gap-3">
             <Button
-              variant={isAllTime ? 'secondary' : 'ghost'}
+              variant={pending === '' ? 'secondary' : 'ghost'}
               size="sm"
               className="justify-start"
-              onClick={resetAll}
+              onClick={() => setPending('')}
             >
               {t('time.allTime')}
-              {isAllTime ? <Check className="ml-auto size-3.5" /> : null}
+              {pending === '' ? <Check className="ml-auto size-3.5" /> : null}
             </Button>
 
             <div className="flex flex-col gap-1.5">
@@ -127,8 +139,11 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                   <Button
                     key={year}
                     size="xs"
-                    variant={timeFilter === year ? 'default' : 'outline'}
-                    onClick={() => preset(year)}
+                    variant={pending?.startsWith(year) ? 'default' : 'outline'}
+                    onClick={() => {
+                      setSelectedYear(Number(year))
+                      setPending(year)
+                    }}
                   >
                     {year}
                   </Button>
@@ -147,8 +162,8 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                     <Button
                       key={value}
                       size="xs"
-                      variant={timeFilter === value ? 'default' : 'outline'}
-                      onClick={() => preset(value)}
+                      variant={pending === value ? 'default' : 'outline'}
+                      onClick={() => setPending(value)}
                     >
                       {quarter}
                     </Button>
@@ -169,8 +184,8 @@ function PeriodDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
                     <Button
                       key={value}
                       size="xs"
-                      variant={timeFilter === value ? 'default' : 'outline'}
-                      onClick={() => preset(value)}
+                      variant={pending === value ? 'default' : 'outline'}
+                      onClick={() => setPending(value)}
                     >
                       {month}
                     </Button>
