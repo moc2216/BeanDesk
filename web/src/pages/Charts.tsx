@@ -507,21 +507,26 @@ export function Charts() {
     ...(balance.data?.unconverted_currencies ?? []),
     ...(income.data?.unconverted_currencies ?? []),
   ].filter((value, index, all) => all.indexOf(value) === index)
+  const kpiReady = !loading && !failed
   const kpiItems = [
-    { label: t('charts.netWorth'), value: balance.data ? formatCurrency(net, currency) : null },
+    {
+      label: t('charts.netWorth'),
+      value: kpiReady && balance.data ? formatCurrency(net, currency) : null,
+    },
     {
       label: t('charts.assets'),
-      value: balance.data ? formatCurrency(balance.data.totals.assets, currency) : null,
+      value: kpiReady && balance.data ? formatCurrency(balance.data.totals.assets, currency) : null,
     },
     {
       label: t('charts.liabilities'),
-      value: balance.data
-        ? formatCurrency(Math.abs(balance.data.totals.liabilities), currency)
-        : null,
+      value:
+        kpiReady && balance.data
+          ? formatCurrency(Math.abs(balance.data.totals.liabilities), currency)
+          : null,
     },
     {
       label: t('charts.savingsRate'),
-      value: savingsUndefined ? null : (savingRate * 100).toFixed(1) + '%',
+      value: kpiReady && !savingsUndefined ? (savingRate * 100).toFixed(1) + '%' : null,
       note: savingsUndefined ? t('charts.savingsUndefined') : undefined,
     },
   ]
@@ -556,7 +561,7 @@ export function Charts() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpiItems.map((item) => (
-          <div key={item.label} className="rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <div key={item.label} className="density-card rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <div className="text-xs text-muted-foreground">{item.label}</div>
             <div className="mt-2 text-2xl leading-8 font-semibold tracking-tight tabular-nums">
               {item.value ?? '—'}
