@@ -100,9 +100,15 @@ export async function openConnection(
       return true
     }
     if (state.kind === 'occupied') {
+      // A local origin belongs to this window: whatever answered the probe is
+      // either AirPlay, a proxy that intercepts loopback traffic, or a listener
+      // about to go away. Start our engine and let it report a real bind error.
       const airplay = isAirPlayServer(state.server)
-      if (!(connection.kind === 'local' && airplay)) {
+      if (connection.kind !== 'local') {
         throw new Error(airplay ? 'airplay' : 'occupied')
+      }
+      if (airplay) {
+      } else {
       }
     }
     if (connection.kind !== 'local') {

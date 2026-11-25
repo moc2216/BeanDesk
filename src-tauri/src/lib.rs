@@ -244,7 +244,7 @@ fn local_project(value: &serde_json::Value) -> Result<SavedLocal, String> {
 /// this call. If a process started earlier is still alive, keep it.
 #[tauri::command]
 async fn start_saved_fava(app: AppHandle) -> Result<(), String> {
-    spawn_heavy(move || {
+    let out = spawn_heavy(move || {
         let saved = saved_local(&app)?;
         if !accepts_local_origin(&saved.origin) {
             return Err("loopback".to_string());
@@ -264,15 +264,15 @@ async fn start_saved_fava(app: AppHandle) -> Result<(), String> {
             }
             #[cfg(not(windows))]
             {
-                return lock(&host).start(
-                    Path::new(&saved.directory),
-                    &sidecar_command(&engine, &saved.origin)?,
-                );
+                let cmd = sidecar_command(&engine, &saved.origin)?;
+                let r = lock(&host).start(Path::new(&saved.directory), &cmd);
+                return r;
             }
         }
         lock(&host).start(Path::new(&saved.directory), &saved.command)
     })
-    .await
+    .await;
+    out
 }
 
 /// Stop the process group this window started.
