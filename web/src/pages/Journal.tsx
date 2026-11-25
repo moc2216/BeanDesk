@@ -301,8 +301,10 @@ export function Journal() {
                       <TableHead className="w-28">{t('journal.date')}</TableHead>
                       <TableHead className="w-40">{t('journal.payee')}</TableHead>
                       <TableHead>{t('journal.narration')}</TableHead>
-                      <TableHead className="w-[26%]">{t('journal.debit')}</TableHead>
-                      <TableHead className="w-[26%] border-l">{t('journal.credit')}</TableHead>
+                      <TableHead className="w-[26%] text-right">{t('journal.debit')}</TableHead>
+                      <TableHead className="w-[26%] border-l text-right">
+                        {t('journal.credit')}
+                      </TableHead>
                       <TableHead className="w-16 text-center">{t('journal.document')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -311,7 +313,7 @@ export function Journal() {
                       const { debit, credit } = splitPostings(tx.postings)
                       return (
                       <TableRow key={tx.id}>
-                        <TableCell className="align-top font-mono text-xs text-muted-foreground">
+                        <TableCell className="align-top text-xs tabular-nums text-muted-foreground">
                           {tx.date}
                         </TableCell>
                         <TableCell className="max-w-40 overflow-hidden align-top font-medium">
@@ -443,7 +445,7 @@ function PostingStack({ postings }: { postings: PostingItem[] }) {
             />
             <span
               className={cn(
-                'shrink-0 font-mono text-xs tabular-nums',
+                'shrink-0 text-xs font-medium tabular-nums',
                 tone === 'positive' && 'text-positive',
                 tone === 'destructive' && 'text-destructive',
               )}

@@ -121,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         cn(
                           'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-secondary text-secondary-foreground'
+                            ? 'bg-primary/10 text-primary'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                         )
                       }
@@ -156,9 +156,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   title={label === title ? undefined : title}
                   className={({ isActive }) =>
                     cn(
-                      buttonVariants({
-                        variant: isActive ? 'secondary' : 'ghost',
-                      }),
+                      buttonVariants({ variant: 'ghost' }),
+                      isActive && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
                     )
                   }
                 >
@@ -176,7 +175,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               to="/settings"
               aria-label={t('settings.title')}
               className={({ isActive }) =>
-                cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'icon-sm' }))
+                cn(
+                  buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+                  isActive && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
+                )
               }
             >
               <Settings />

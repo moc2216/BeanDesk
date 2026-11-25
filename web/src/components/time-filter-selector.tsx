@@ -459,8 +459,12 @@ export function TimeFilterSelector({ className }: { className?: string }) {
           size="icon-sm"
           onClick={() => setOpen(true)}
           aria-label={t('time.pickerTitle')}
+          className="relative"
         >
           <CalendarDays className="text-muted-foreground" />
+          {!isAllTime ? (
+            <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+          ) : null}
         </Button>
       </Hint>
 
