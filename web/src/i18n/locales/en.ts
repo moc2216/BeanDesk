@@ -182,6 +182,7 @@ export const en = {
   },
 
   charts: {
+    details: 'View details',
     noAllocation: 'No assets this period',
     noExpenses: 'No spending this period',
     filterPeriod: 'Period',

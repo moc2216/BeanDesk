@@ -33,6 +33,27 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'rollup:other': '#64748b',
 }
 
+function channel(value: number): number {
+  const v = value / 255
+  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+}
+
+export function relativeLuminance(hex: string): number {
+  const value = hex.replace('#', '')
+  const r = channel(parseInt(value.slice(0, 2), 16))
+  const g = channel(parseInt(value.slice(2, 4), 16))
+  const b = channel(parseInt(value.slice(4, 6), 16))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** Black or white, whichever reads better on the fill. */
+export function textOnFill(hex: string): string {
+  const luminance = relativeLuminance(hex)
+  const onBlack = (luminance + 0.05) / 0.05
+  const onWhite = 1.05 / (luminance + 0.05)
+  return onBlack >= onWhite ? '#0b0c10' : '#ffffff'
+}
+
 export function colorForCategory(key: string | undefined): string {
   return (key && CATEGORY_COLORS[key]) || '#64748b'
 }

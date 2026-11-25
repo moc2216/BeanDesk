@@ -185,6 +185,7 @@ export const zhCN = {
   },
 
   charts: {
+    details: '查看明细',
     noAllocation: '本期没有资产数据',
     noExpenses: '本期没有支出数据',
     filterPeriod: '筛选期间',

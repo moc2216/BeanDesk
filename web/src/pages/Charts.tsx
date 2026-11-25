@@ -41,6 +41,7 @@ import {
   categoryAxis,
   colorForCategory,
   expenseKey,
+  textOnFill,
   tooltipStyle,
   valueAxis,
 } from '@/lib/chart-theme'
@@ -177,13 +178,12 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
       name: formatAccount(node.name),
       value: Math.abs(node.total),
       itemStyle: { color },
-      children: visible(node.children).map((child, childIndex) => ({
+      label: { color: textOnFill(color) },
+      children: visible(node.children).map((child) => ({
         name: formatAccount(child.name),
         value: Math.abs(child.total),
-        itemStyle: {
-          color,
-          opacity: Math.max(0.55, 0.95 - childIndex * 0.08),
-        },
+        itemStyle: { color },
+        label: { color: textOnFill(color) },
       })),
     }
   })
@@ -649,6 +649,20 @@ export function Charts() {
                   )}{' '}
                   {allocation.effective.toFixed(1)}
                 </p>
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer select-none">{t('charts.details')}</summary>
+                  <ul className="mt-2 grid gap-1">
+                    {allocation.items.map((item) => (
+                      <li key={item.name} className="flex items-center justify-between gap-3">
+                        <span>{item.name}</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(item.value, currency)}
+                          {allocation.total > 0 ? ' · ' + ((item.value / allocation.total) * 100).toFixed(1) + '%' : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </>
             ) : (
               <p className="py-12 text-center text-xs text-muted-foreground">
@@ -659,7 +673,22 @@ export function Charts() {
 
           <ChartFrame title={t('charts.spending')} hint={t('charts.spendingHint')}>
                                 {visible(expenses?.children ?? []).length > 0 ? (
-              <Treemap nodes={expenses?.children ?? []} currency={currency} />
+              <>
+                <Treemap nodes={expenses?.children ?? []} currency={currency} />
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer select-none">{t('charts.details')}</summary>
+                  <ul className="mt-2 grid gap-1">
+                    {visible(expenses?.children ?? []).map((node) => (
+                      <li key={node.name} className="flex items-center justify-between gap-3">
+                        <span>{formatAccount(node.name)}</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(Math.abs(node.total), currency)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </>
             ) : (
               <p className="py-12 text-center text-xs text-muted-foreground">
                 {t('charts.noExpenses')}
