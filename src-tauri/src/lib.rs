@@ -28,6 +28,21 @@ use tauri_plugin_store::StoreExt;
 const MAIN_WINDOW: &str = "main";
 const HANDBOOK_WINDOW: &str = "handbook";
 
+const HANDBOOK_CLOSE_SCRIPT: &str = r#"
+(function () {
+  if (window.__beanEscBound) return;
+  window.__beanEscBound = true;
+  window.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    event.preventDefault();
+    try {
+      window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: 'handbook' });
+    } catch (error) {}
+  });
+})();
+"#;
+
+
 pub(crate) const CONNECTION_FILE: &str = "connection.json";
 pub(crate) const CONNECTION_KEY: &str = "connection";
 
@@ -94,6 +109,7 @@ pub fn run() {
                 return;
             }
             if webview.label() == HANDBOOK_WINDOW {
+                let _ = webview.eval(HANDBOOK_CLOSE_SCRIPT);
                 let _ = webview.app_handle().emit("handbook-ready", ());
             }
         })
