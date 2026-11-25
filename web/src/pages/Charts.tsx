@@ -1,13 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
 import * as echarts from 'echarts'
+import { Settings2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Chart } from '@/components/echart'
 import { PortfolioView } from '@/components/portfolio-view'
 import { ReportWhen } from '@/components/report-bar'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
+import { ASSET_CLASSES, classOf, loadClassMap, saveClassMap, type AssetClass } from '@/lib/asset-classes'
 import { useTheme } from '@/components/theme-provider'
+import type { MessageKey } from '@/i18n/locales/en'
 import { fetchBalanceSheet, fetchIncomeStatement, type AccountNode } from '@/lib/api'
 import { CHART_COLORS, categoryAxis, tooltipStyle, valueAxis } from '@/lib/chart-theme'
 import { useAccountDisplay } from '@/lib/account-display'
@@ -194,7 +213,10 @@ export function Charts() {
   const time = isAllTime ? undefined : timeFilter
   const balance = useQuery({ queryKey: ['charts-balance', time], queryFn: ({ signal }) => fetchBalanceSheet(time, signal) })
   const income = useQuery({ queryKey: ['charts-income', time], queryFn: ({ signal }) => fetchIncomeStatement(time, signal) })
-  const [dim, setDim] = useState<'class' | 'account'>('class')
+  const [dim, setDim] = useState<'assetClass' | 'group' | 'account'>('assetClass')
+  const [classMap, setClassMap] = useState<Record<string, AssetClass>>(loadClassMap)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [mapDraft, setMapDraft] = useState<Record<string, AssetClass>>({})
 
   const loading = balance.isPending || income.isPending
   const failed = balance.isError || income.isError
@@ -204,14 +226,25 @@ export function Charts() {
   const incomeSection = income.data?.sections.find((section) => section.section === 'income')
 
   const allocation = useMemo(() => {
-    const items =
-      dim === 'class'
-        ? assets
-            .filter((node) => Math.abs(node.total) > 0.005)
-            .map((node) => ({ name: formatAccount(node.name), value: Math.abs(node.total) }))
-        : leafItems(assets, formatAccount)
+    const visibleAssets = assets.filter((node) => Math.abs(node.total) > 0.005)
+    let items: Array<{ name: string; value: number }>
+    if (dim === 'assetClass') {
+      const totals = new Map<AssetClass, number>()
+      for (const node of visibleAssets) {
+        const key = classOf(node, classMap)
+        totals.set(key, (totals.get(key) ?? 0) + Math.abs(node.total))
+      }
+      items = ASSET_CLASSES.map((key) => ({
+        name: t(('charts.assetClasses.' + key) as MessageKey),
+        value: totals.get(key) ?? 0,
+      }))
+    } else if (dim === 'group') {
+      items = visibleAssets.map((node) => ({ name: formatAccount(node.name), value: Math.abs(node.total) }))
+    } else {
+      items = leafItems(assets, formatAccount)
+    }
     return shareItems(items, t('charts.otherLabel'))
-  }, [assets, dim, formatAccount, t])
+  }, [assets, dim, classMap, formatAccount, t])
 
   const incomeTotal = Math.abs(incomeSection?.total ?? 0)
   const expenseTotal = Math.abs(expenses?.total ?? 0)
@@ -409,6 +442,21 @@ export function Charts() {
     [payees, currency, compact],
   )
 
+  const classGroups = assets.filter((node) => Math.abs(node.total) > 0.005)
+
+  function openMap() {
+    const draft: Record<string, AssetClass> = {}
+    for (const node of classGroups) draft[node.account] = classOf(node, classMap)
+    setMapDraft(draft)
+    setMapOpen(true)
+  }
+
+  function saveMap() {
+    setClassMap(mapDraft)
+    saveClassMap(mapDraft)
+    setMapOpen(false)
+  }
+
   const seriesPending = series.isPending
   const seriesFailed = series.isError
 
@@ -462,8 +510,8 @@ export function Charts() {
             title={t('charts.allocation')}
             hint={t('charts.allocationHint')}
             actions={
-              <div className="flex gap-2">
-                {(['class', 'account'] as const).map((key) => (
+              <div className="flex items-center gap-1.5">
+                {(['assetClass', 'group', 'account'] as const).map((key) => (
                   <button
                     key={key}
                     type="button"
@@ -473,15 +521,35 @@ export function Charts() {
                       dim === key ? 'border-primary text-foreground' : 'text-muted-foreground',
                     )}
                   >
-                    {t(key === 'class' ? 'charts.byClass' : 'charts.byAccount')}
+                    {t(
+                      key === 'assetClass'
+                        ? 'charts.byAssetClass'
+                        : key === 'group'
+                          ? 'charts.byGroup'
+                          : 'charts.byAccount',
+                    )}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={openMap}
+                  aria-label={t('charts.mapEdit')}
+                  className="rounded-full border p-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Settings2 className="size-3.5" />
+                </button>
               </div>
             }
           >
             <Pie items={allocation.items} top={allocation.top} label={t('charts.topShare')} currency={currency} />
             <p className="text-xs text-muted-foreground">
-              {t(dim === 'class' ? 'charts.effectiveClasses' : 'charts.effectiveAccounts')}{' '}
+              {t(
+                dim === 'assetClass'
+                  ? 'charts.effectiveAssetClass'
+                  : dim === 'group'
+                    ? 'charts.effectiveGroups'
+                    : 'charts.effectiveAccounts',
+              )}{' '}
               {allocation.effective.toFixed(1)}
             </p>
           </ChartFrame>
@@ -489,6 +557,45 @@ export function Charts() {
           <ChartFrame title={t('charts.spending')} hint={t('charts.spendingHint')}>
             <Treemap nodes={expenses?.children ?? []} currency={currency} />
           </ChartFrame>
+
+      <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('charts.mapTitle')}</DialogTitle>
+            <DialogDescription>{t('charts.mapHint')}</DialogDescription>
+          </DialogHeader>
+          <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto">
+            {classGroups.map((node) => (
+              <div key={node.account} className="flex items-center justify-between gap-3">
+                <span className="min-w-0 flex-1 truncate text-sm">{formatAccount(node.name)}</span>
+                <Select
+                  value={mapDraft[node.account] ?? classOf(node, classMap)}
+                  onValueChange={(value) =>
+                    setMapDraft((current) => ({ ...current, [node.account]: value as AssetClass }))
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSET_CLASSES.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {t(('charts.assetClasses.' + key) as MessageKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMapOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={saveMap}>{t('common.confirm')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
           <section className="mt-2 flex flex-col gap-4 rounded-2xl bg-muted/30 p-5 lg:col-span-2">
             <PortfolioView />
