@@ -7,6 +7,8 @@
 
 基于原作者 BeanDesk（AGPL-3.0）的二次扩展，已完成设计体系、会计期间、图表可读性、金额精度、密度、无障碍与开源说明；版本 `0.3.0`；已关闭自动更新（无 endpoint、无签名）；`identifier` 保留 `app.beandesk.desktop`。当前分支 `main`，最新提交见 `git log -1`。
 
+- 远程：`moc2216/BeanDesk`（私有，待转公开）；`origin` 指向它，`upstream` 指向上游。
+
 ## 1. 快速启动
 
 ```bash

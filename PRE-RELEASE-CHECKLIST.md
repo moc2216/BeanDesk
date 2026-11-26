@@ -1,12 +1,18 @@
-# 开源发布前检查清单（需你拍板/执行）
+# 开源发布前检查清单
 
 > 这些项涉及账号、版本与分发身份，我没有擅自改。上传前逐项确认。
 
+## 0. 状态（2026-11-26）
+
+- 远程仓库已建立：https://github.com/moc2216/BeanDesk（当前私有，待转公开）；
+- `origin` 指向新仓库，`upstream` 保留原作者仓库；`main` 已推送；
+- 首次 CI 全绿：web、docs、rust、windows；windows 作业完成 NSIS 打包、静默安装与安装目录内 `bean-check` / `restic version` 校验。
+
 ## 1. 仓库与远端
 
-- [ ] 在 GitHub 新建自己的仓库（不要直接 push 到 `SuperDaniel-cn/BeanDesk`）；
-- [ ] `git remote set-url origin <你的仓库>`；确认 `git push` 成功；
-- [ ] 保留 `NOTICE`、`LICENSE`、原作者署名与二次开发说明。
+- [x] 在 GitHub 新建自己的仓库（不要直接 push 到 `SuperDaniel-cn/BeanDesk`）；
+- [x] `git remote set-url origin <你的仓库>`；确认 `git push` 成功；
+- [x] 保留 `NOTICE`、`LICENSE`、原作者署名与二次开发说明。
 
 ## 2. 版本与更新源（已按你的决定处理）
 
