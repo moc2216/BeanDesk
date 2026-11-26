@@ -14,6 +14,7 @@
 - 未折算币种警告、空期间与失败态、KPI 三态；
 - NOTICE、二次开发说明（中英）、HANDOFF、决策记录、CONTRIBUTING、CI；
 - Windows x64：Job Object 托管进程树、引擎与 restic 资源校验、NSIS 安装包与 windows CI 作业。
+- 策略存储改用可解析缺失末级的路径归一，Windows 下移动账套后策略记录仍能跟随。
 
 ### Changed
 

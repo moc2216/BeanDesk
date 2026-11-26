@@ -442,18 +442,42 @@ fn nfc(value: &str) -> String {
     value.nfc().collect()
 }
 
-fn ledger_key(directory: &Path) -> String {
-    match directory.canonicalize() {
-        Ok(resolved) => nfc(&resolved.to_string_lossy()),
-        Err(_) => nfc(&directory.to_string_lossy()),
+/// Canonical path when it exists, otherwise canonicalise the nearest existing
+/// ancestor and append the missing components. A moved ledger folder leaves the
+/// old path gone, but its parent still resolves short names, junctions or a
+/// different case to the form the entry was stored under.
+fn resolved_path(path: &Path) -> PathBuf {
+    if let Ok(resolved) = path.canonicalize() {
+        return resolved;
     }
+    let mut missing: Vec<std::ffi::OsString> = Vec::new();
+    let mut probe = path.to_path_buf();
+    while let Some(parent) = probe.parent() {
+        if let Some(name) = probe.file_name() {
+            missing.push(name.to_os_string());
+        }
+        probe = parent.to_path_buf();
+        if probe.as_os_str().is_empty() {
+            break;
+        }
+        if let Ok(base) = probe.canonicalize() {
+            let mut resolved = base;
+            for name in missing.iter().rev() {
+                resolved.push(name);
+            }
+            return resolved;
+        }
+    }
+    path.to_path_buf()
+}
+
+fn ledger_key(directory: &Path) -> String {
+    nfc(&resolved_path(directory).to_string_lossy())
 }
 
 fn lookup_key(store: &PolicyFileStore, directory: &Path) -> Option<String> {
     let mut wanted = Vec::new();
-    if let Ok(resolved) = directory.canonicalize() {
-        wanted.push(comparable_key(&resolved.to_string_lossy()));
-    }
+    wanted.push(comparable_key(&resolved_path(directory).to_string_lossy()));
     wanted.push(comparable_key(&directory.to_string_lossy()));
     store
         .ledgers
@@ -466,10 +490,10 @@ fn comparable_key(value: &str) -> String {
     let normalized = nfc(value);
     let path = normalized.strip_prefix(r"\\?\").unwrap_or(&normalized);
     if let Some(unc) = normalized.strip_prefix(r"\\?\UNC\") {
-        return format!(r"\\{}", unc.trim_end_matches('\\'));
+        return format!(r"\\{}", unc.trim_end_matches('\\')).to_lowercase();
     }
     if path.starts_with(r"\\") {
-        return path.trim_end_matches('\\').to_string();
+        return path.trim_end_matches('\\').to_lowercase();
     }
     if let [drive, b':', b'/' | b'\\', ..] = path.as_bytes()
         && drive.is_ascii_alphabetic()
@@ -480,7 +504,8 @@ fn comparable_key(value: &str) -> String {
             "{}:\\{}",
             drive.to_ascii_uppercase() as char,
             rest.trim_matches('\\')
-        );
+        )
+        .to_lowercase();
     }
     let path = if normalized.starts_with("/private/") {
         &normalized["/private".len()..]
@@ -584,6 +609,14 @@ narration_regex = "还股东借款|还垫付款"
         assert_eq!(
             comparable_key(r"\\?\UNC\server\share\Books"),
             comparable_key(r"\\server\share\Books\"),
+        );
+        assert_eq!(
+            comparable_key(r"\\?\UNC\server\share\Books"),
+            comparable_key(r"\\SERVER\share\books"),
+        );
+        assert_eq!(
+            comparable_key(r"\\?\C:\Books\财务"),
+            comparable_key(r"c:\books\财务"),
         );
         assert_ne!(comparable_key("C:Books"), comparable_key("C:/Books"));
         assert_ne!(comparable_key("/privateer/ledger"), comparable_key("er/ledger"));
