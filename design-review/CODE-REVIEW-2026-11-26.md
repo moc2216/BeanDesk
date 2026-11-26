@@ -19,7 +19,7 @@
 
 ### P1 · 发布卫生（建议上传前处理）
 
-1. **`.github/workflows/updater-notes.yml` 已是死工作流**：它只在 Release 含 `latest.json` 时触发，而本分支 `createUpdaterArtifacts: false`，永远不会产出该文件。保留会让人误以为还有更新通道。已删除，避免误以为还有更新通道。
+1. **`.github/workflows/updater-notes.yml` 已是死工作流**：它只在 Release 含 `latest.json` 时触发，而本分支 `createUpdaterArtifacts: false`，永远不会产出该文件。已删除，避免让人误以为还有更新通道。
 2. **`.github/FUNDING.yml:3` 仍指向原作者赞助页**：在你自己的仓库上会出现“Sponsor”按钮，但收款方是上游作者。建议删除或改成你自己的赞助方式。
 3. **`src-tauri/Cargo.toml:6` 的 `repository` 仍指向上游**：包元数据会误导。建好自有仓库后改成新地址。
 
