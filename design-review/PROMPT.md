@@ -3,7 +3,7 @@
 请先读：
 - design-review/README.md（背景、约束、问题清单）
 - design-review/palette.json（三套色板）
-- 如可读图，查看 design-review/screens/ 下的 PNG（candidate-A.png、candidate-B.png 为同界面对比）
+- 界面截图含真实账目，不随仓库发布；评审以源码与文字说明为准。
 
 要求：
 1. 只评审，不修改任何代码或文件，除了写 design-review/codex-review.md。

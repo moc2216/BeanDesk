@@ -43,11 +43,7 @@
 
 ## 截图
 
-- `screens/palette-audit.png`：对比度/色盲审计与两版色板
-- `screens/candidate-A.png`：A 的完整界面效果
-- `screens/candidate-B.png`：B 的完整界面效果
-- `screens/charts-light.png`、`screens/charts-dark.png`：当前线上效果
-- `screens/settings-density.png`、`screens/header.png`：周边界面
+截图含真实账目数据，未纳入版本库（本地保留）。
 
 ## 希望评审者回答
 

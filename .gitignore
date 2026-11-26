@@ -29,3 +29,6 @@ engine/__pycache__/
 
 # Demo ledgers
 demo/
+
+# Screenshots contain real ledger data; keep them local only.
+design-review/screens/
