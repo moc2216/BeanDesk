@@ -21,7 +21,7 @@ import {
   Terminal,
 } from 'lucide-react'
 
-import { useAppUpdate } from '@/components/app-update'
+import { UPDATES_ENABLED, useAppUpdate } from '@/components/app-update'
 import { BackupSettingsPanel } from '@/components/backup-settings'
 import { BrandMark } from '@/components/brand-mark'
 import { formatConnectionLog, formatConnectionLogLine, useDesktop } from '@/components/desktop-gate'
@@ -261,7 +261,7 @@ function AboutSettings({ tauri }: { tauri: boolean }) {
             <p className="text-xs text-muted-foreground">{t('settings.aboutBlurb')}</p>
           </div>
         </div>
-        {tauri ? <UpdateCheck /> : null}
+        {tauri && UPDATES_ENABLED ? <UpdateCheck /> : null}
       </div>
       <Separator />
       <div className="flex flex-col items-start gap-1.5">

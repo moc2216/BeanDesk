@@ -8,22 +8,17 @@
 - [ ] `git remote set-url origin <你的仓库>`；确认 `git push` 成功；
 - [ ] 保留 `NOTICE`、`LICENSE`、原作者署名与二次开发说明。
 
-## 2. 版本与更新源（必须处理）
+## 2. 版本与更新源（已按你的决定处理）
 
-当前 `src-tauri/tauri.conf.json`：
+已确定并落地（2026-11-26）：
 
-- `version: 0.2.9`（与上游同号）；
-- `identifier: app.beandesk.desktop`（上游标识）；
-- updater endpoint 指向 `https://github.com/SuperDaniel-cn/BeanDesk/releases/latest/download/latest.json`；
-- updater 公钥为原作者密钥。
+- 版本升至 `0.3.0`（`tauri.conf.json`、`web/package.json`、`src-tauri/Cargo.toml` 三处一致）；
+- **关闭自动更新**：移除 updater endpoint 与原作者公钥、移除插件初始化与 `updater:default` 能力、`createUpdaterArtifacts: false`、发布流程不再要求签名密钥；设置页不再显示「检查更新」；
+- `identifier` 保留 `app.beandesk.desktop`：它只是应用数据目录与系统标识，保留可延续本机账本连接与设置，不影响开源署名。
 
-三选一：
+仍需你执行：新建仓库后改 `origin`（见第 1 节）。
 
-1. **推荐**：版本升 `0.3.0`；关闭 updater（移除 endpoints / 不启用插件），发布页手动更新；
-2. 配置自己的 endpoint 与新密钥（`tauri signer generate`），保留自动更新；
-3. 保持现状（仅限私有使用，不建议公开分发）。
-
-identifier 二选一：保留（延续本机数据）或改为自己的反向域名（新应用数据目录，需重新连接账本）。
+将来要恢复自动更新：重新加入插件与 endpoint，用 `tauri signer generate` 生成自己的密钥，把公钥写入配置、私钥放 CI secret，然后把 `web/src/components/app-update.tsx` 的 `UPDATES_ENABLED` 改为 `true`。
 
 ## 3. 合规
 

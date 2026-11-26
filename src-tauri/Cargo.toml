@@ -1,6 +1,6 @@
 [package]
 name = "BeanDesk"
-version = "0.2.9"
+version = "0.3.0"
 description = "BeanDesk desktop shell"
 license = "AGPL-3.0-only"
 repository = "https://github.com/SuperDaniel-cn/BeanDesk"
@@ -30,7 +30,6 @@ tauri-plugin-dialog = "2"
 libc = "0.2.189"
 sys-locale = "0.3.2"
 time = { version = "0.3.55", features = ["formatting", "local-offset", "macros"] }
-tauri-plugin-updater = "2.13.1"
 tauri-plugin-process = "2.4.0"
 url = "2.5.8"
 git2 = { version = "0.21.0", default-features = false }

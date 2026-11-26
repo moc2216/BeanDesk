@@ -15,7 +15,6 @@
     "dialog:default",
     "store:default",
     "log:default",
-    "updater:default",
     "process:allow-restart",
     "allow-start-saved-fava",
     "allow-stop-saved-fava",

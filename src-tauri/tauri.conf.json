@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "BeanDesk",
   "mainBinaryName": "BeanDesk",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "identifier": "app.beandesk.desktop",
   "build": {
     "frontendDist": "../web/dist",
@@ -36,8 +36,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg", "nsis", "deb", "appimage"],
-    "createUpdaterArtifacts": true,
+    "targets": [
+      "app",
+      "dmg",
+      "nsis",
+      "deb",
+      "appimage"
+    ],
+    "createUpdaterArtifacts": false,
     "macOS": {
       "signingIdentity": "-"
     },
@@ -53,14 +59,6 @@
       "binaries/restic/": "restic/",
       "infoplist/zh-Hans.lproj/": "zh-Hans.lproj/",
       "infoplist/zh_CN.lproj/": "zh_CN.lproj/"
-    }
-  },
-  "plugins": {
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU5QTQyMTRFNEFBQUFENkUKUldSdXJhcEtUaUdrNlpzNVM4eGVQcldrbmJ0YVNBWVdYbWpTb0ZoK096NlV2WG9yY0c2U0lLOTIK",
-      "endpoints": [
-        "https://github.com/SuperDaniel-cn/BeanDesk/releases/latest/download/latest.json"
-      ]
     }
   }
 }

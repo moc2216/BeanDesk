@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dialog'
 import { useI18n } from '@/i18n'
 
+export const UPDATES_ENABLED = false
+
 type Phase = 'idle' | 'checking' | 'installing' | 'none' | 'failed'
 
 type UpdateValue = {
@@ -33,7 +35,9 @@ export function AppUpdate({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [pending, setPending] = useState<Update | null>(null)
   const pendingRef = useRef<Update | null>(null)
-  const desktop = isTauri()
+  // This fork ships without an update channel: no endpoint, no signing key.
+  // Re-enable together with a configured endpoint once releases are signed.
+  const desktop = isTauri() && UPDATES_ENABLED
 
   const replacePending = useCallback((next: Update | null) => {
     const previous = pendingRef.current

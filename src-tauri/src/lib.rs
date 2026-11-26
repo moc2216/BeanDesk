@@ -94,9 +94,6 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().skip_logger().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
-            #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_updater::Builder::new().build())?;
             connection_log::install(app.handle())?;
             backup::start_if_enabled(app.handle());
             #[cfg(desktop)]

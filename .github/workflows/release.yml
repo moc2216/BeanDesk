@@ -31,18 +31,6 @@ jobs:
             exit 1
           fi
 
-      - name: require updater signing secrets
-        shell: bash
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${TAURI_SIGNING_PRIVATE_KEY}" || -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" ]]; then
-            echo "Set TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD before tagging." >&2
-            exit 1
-          fi
-
       - name: install Linux dependencies
         run: |
           sudo apt-get update
@@ -175,13 +163,10 @@ jobs:
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: src-tauri
           tagName: v__VERSION__
           releaseName: BeanDesk v__VERSION__
           releaseDraft: true
           prerelease: false
-          updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
