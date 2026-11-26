@@ -25,11 +25,6 @@ const PAGES: &[HandbookPage] = &[
         zh: include_str!("../../../docs/content/docs/desktop.zh-CN.mdx"),
     },
     HandbookPage {
-        slug: "calendar",
-        en: include_str!("../../../docs/content/docs/calendar.mdx"),
-        zh: include_str!("../../../docs/content/docs/calendar.zh-CN.mdx"),
-    },
-    HandbookPage {
         slug: "mcp",
         en: include_str!("../../../docs/content/docs/mcp.mdx"),
         zh: include_str!("../../../docs/content/docs/mcp.zh-CN.mdx"),
@@ -306,7 +301,6 @@ mod tests {
                 "setup/first-book",
                 "setup/existing",
                 "desktop",
-                "calendar",
                 "mcp",
                 "reports",
                 "bookkeeping"
@@ -336,13 +330,6 @@ mod tests {
                 .display_block
                 .contains("| page | title | description |")
         );
-        let calendar = card
-            .body
-            .pages
-            .iter()
-            .find(|page| page.page == "calendar")
-            .unwrap();
-        assert_eq!(calendar.title, "日历");
     }
 
     #[test]

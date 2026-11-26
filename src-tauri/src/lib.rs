@@ -124,7 +124,6 @@ pub fn run() {
             upgrade_ledger,
             list_ledger_packs,
             start_if_enabled,
-            read_user_text_file,
             mcp::mcp_host_config,
             system_locales,
             backup::load_backup_settings,
@@ -396,27 +395,6 @@ async fn start_if_enabled(app: AppHandle) {
     .await;
 }
 
-/// Read a user-chosen absolute file. Used for a local ICS calendar.
-/// This is not a general write path.
-#[tauri::command]
-fn read_user_text_file(path: String) -> Result<String, String> {
-    read_user_text_file_at(Path::new(&path))
-}
-
-fn read_user_text_file_at(path: &Path) -> Result<String, String> {
-    if !path.is_absolute() {
-        return Err("path".into());
-    }
-    let meta = std::fs::metadata(path).map_err(|_| "file".to_string())?;
-    if !meta.is_file() {
-        return Err("file".into());
-    }
-    if meta.len() > 2 * 1024 * 1024 {
-        return Err("too-large".into());
-    }
-    std::fs::read_to_string(path).map_err(|_| "file".to_string())
-}
-
 /// Preferred languages from the operating system. The webview's
 /// `navigator.language` follows the app bundle, which is English until the
 /// bundle itself is localized.
@@ -510,7 +488,7 @@ fn open_windows_url(url: &str) -> Result<(), String> {
 mod tests {
     use super::{
         bundled_launch, directory_from_connection, http_url_allowed, local_project,
-        open_external_url, read_user_text_file_at, require_main_bean,
+        open_external_url, require_main_bean,
     };
 
     #[test]
@@ -613,25 +591,6 @@ mod tests {
         let locales = super::system_locales();
         assert!(!locales.is_empty(), "expected at least one OS language");
         assert!(locales.iter().all(|tag| !tag.is_empty()));
-    }
-
-    #[test]
-    fn reads_an_absolute_text_file() {
-        let path = std::env::temp_dir().join(format!("beandesk-cal-{}.ics", std::process::id()));
-        std::fs::write(&path, "BEGIN:VCALENDAR\n").unwrap();
-        let text = read_user_text_file_at(&path).unwrap();
-        let _ = std::fs::remove_file(&path);
-        assert_eq!(text, "BEGIN:VCALENDAR\n");
-    }
-
-    #[test]
-    fn refuses_a_relative_calendar_path() {
-        assert_eq!(
-            read_user_text_file_at(std::path::Path::new("calendar.ics"))
-                .err()
-                .as_deref(),
-            Some("path")
-        );
     }
 
     #[test]
