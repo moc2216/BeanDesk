@@ -492,9 +492,8 @@ pub async fn backup_restore(
             return Err("encrypt".to_string());
         }
         let engine = resolve_engine(Some(&app))?;
-        let status = std::process::Command::new(&engine)
-            .arg("check")
-            .arg(&ledger)
+        let status = crate::process::background_command(&engine)
+            .args(["check", "main.bean"])
             .current_dir(&output)
             .status()
             .map_err(|error| error.to_string())?;

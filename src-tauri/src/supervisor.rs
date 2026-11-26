@@ -2,13 +2,13 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 use std::thread;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+#[cfg(unix)]
+use std::time::{Duration, Instant};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// A Fava process this window started. Stopping it signals that process group
-/// and leaves any Fava the user started themselves alone.
-///
-/// The child also watches a pipe held here. If this desktop process disappears
-/// before it can stop, the pipe closes and the child ends that same group.
+#[cfg(windows)]
+use crate::process::windows;
+
 #[derive(Clone, Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HostSnapshot {
@@ -17,12 +17,16 @@ pub struct HostSnapshot {
     pub started_ms: Option<u64>,
 }
 
+/// Owns the process tree this window started, via a Unix parent-watch pipe or a
+/// Windows kill-on-close job. External Fava instances never enter this state.
 #[derive(Default)]
 pub struct Supervisor {
     child: Option<Child>,
     started_at: Option<SystemTime>,
     #[cfg(unix)]
     parent_hold: Option<std::os::fd::OwnedFd>,
+    #[cfg(windows)]
+    job: Option<std::os::windows::io::OwnedHandle>,
 }
 
 impl Drop for Supervisor {
@@ -66,8 +70,19 @@ impl Supervisor {
         #[cfg(unix)]
         let watch = install_parent_watch(&mut shell, command)?;
         #[cfg(windows)]
-        shell.arg("/C").arg(command);
+        {
+            use std::os::windows::process::CommandExt;
+
+            // /S strips the outer quotes. raw_arg preserves any quotes already
+            // present in the saved command (e.g. a path containing spaces).
+            shell
+                .args(["/D", "/S", "/C"])
+                .raw_arg(format!("\"{command}\""));
+        }
+        #[cfg(unix)]
         let child = shell.spawn().map_err(|error| format!("spawn: {error}"))?;
+        #[cfg(windows)]
+        let child = self.spawn_in_job(&mut shell)?;
         #[cfg(unix)]
         {
             drop(watch.child_read);
@@ -78,10 +93,7 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Start `program` with `args` and watch that process, not a shell.
-    ///
-    /// The Windows engine is a windowed exe. `cmd /C` returns as soon as that
-    /// process is created, so a shell start would look like an instant exit.
+    /// Start a binary directly so the tracked child is the engine itself.
     #[cfg_attr(not(windows), allow(dead_code))]
     pub fn start_program(
         &mut self,
@@ -108,23 +120,36 @@ impl Supervisor {
             use std::os::unix::process::CommandExt;
             cmd.process_group(0);
         }
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            cmd.creation_flags(0x0800_0200);
-        }
+        #[cfg(unix)]
         let mut child = cmd.spawn().map_err(|error| format!("spawn: {error}"))?;
+        #[cfg(windows)]
+        let mut child = self.spawn_in_job(&mut cmd)?;
         forward_stdio(child.stdout.take(), child.stderr.take());
         self.child = Some(child);
         self.started_at = Some(SystemTime::now());
         Ok(())
     }
 
+    #[cfg(windows)]
+    fn spawn_in_job(&mut self, command: &mut Command) -> Result<Child, String> {
+        let (child, job) =
+            windows::spawn_in_job(command).map_err(|error| format!("spawn: {error}"))?;
+        self.job = Some(job);
+        Ok(child)
+    }
+
+    #[cfg(windows)]
     pub fn stop(&mut self) {
-        #[cfg(unix)]
-        {
-            self.parent_hold.take();
+        self.job.take();
+        if let Some(mut child) = self.child.take() {
+            let _ = child.wait();
         }
+        self.started_at = None;
+    }
+
+    #[cfg(unix)]
+    pub fn stop(&mut self) {
+        self.parent_hold.take();
         self.started_at = None;
         let Some(mut child) = self.child.take() else {
             return;
@@ -159,6 +184,10 @@ impl Supervisor {
         if finished {
             self.child = None;
             self.started_at = None;
+            #[cfg(windows)]
+            {
+                self.job.take();
+            }
             #[cfg(unix)]
             {
                 self.parent_hold.take();
@@ -280,35 +309,20 @@ fn grouped_shell(directory: &Path) -> Command {
     }
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        let mut cmd = Command::new("cmd");
+        let mut cmd = Command::new(windows::system_program("cmd.exe"));
         cmd.current_dir(directory)
             .stdin(Stdio::null())
             .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            // CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP. No console, and the group can still be stopped.
-            .creation_flags(0x0800_0200);
+            .stderr(Stdio::inherit());
         cmd
     }
 }
 
+#[cfg(unix)]
 fn signal_group(pid: u32, force: bool) {
-    if pid == 0 {
-        return;
-    }
-    #[cfg(unix)]
-    unsafe {
+    if pid != 0 {
         let signal = if force { libc::SIGKILL } else { libc::SIGTERM };
-        libc::killpg(pid as i32, signal);
-    }
-    #[cfg(windows)]
-    {
-        let mut command = Command::new("taskkill");
-        command.arg("/T").arg("/PID").arg(pid.to_string());
-        if force {
-            command.arg("/F");
-        }
-        let _ = command.status();
+        unsafe { libc::killpg(pid as i32, signal) };
     }
 }
 
@@ -327,22 +341,16 @@ mod snapshot_tests {
 
     #[test]
     fn start_program_tracks_the_child_until_stop() {
-        let program = if cfg!(windows) {
-            Path::new("C:\\Windows\\System32\\waitfor.exe")
-        } else {
-            Path::new("/bin/sleep")
-        };
-        if !program.is_file() {
-            return;
-        }
-        let args = if cfg!(windows) {
-            vec!["StartProgramTest".into(), "/t".into(), "30".into()]
-        } else {
-            vec!["30".into()]
-        };
+        #[cfg(windows)]
+        let (program, args) = (
+            windows::system_program("waitfor.exe"),
+            vec!["/t".into(), "30".into(), "BeanDeskStartProgramTest".into()],
+        );
+        #[cfg(unix)]
+        let (program, args) = (std::path::PathBuf::from("/bin/sleep"), vec!["30".into()]);
         let mut supervisor = Supervisor::default();
         supervisor
-            .start_program(&std::env::temp_dir(), program, &args)
+            .start_program(&std::env::temp_dir(), &program, &args)
             .unwrap();
         assert!(supervisor.snapshot().running);
         supervisor.stop();
@@ -489,5 +497,118 @@ mod tests {
                 (ppid == parent).then_some(pid)
             })
             .collect()
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_tests {
+    use super::*;
+    use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
+    use std::time::{Duration, Instant};
+    use windows_sys::Win32::Foundation::{WAIT_OBJECT_0, WAIT_TIMEOUT};
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SYNCHRONIZE, WaitForSingleObject};
+
+    #[test]
+    fn a_quoted_shell_command_keeps_descendants_in_the_job_after_the_shell_exits() {
+        let directory = std::env::temp_dir().join(format!("BeanDesk Job {}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let pid_file = directory.join("child.pid");
+        let _ = std::fs::remove_file(&pid_file);
+
+        let powershell = windows::system_program(r"WindowsPowerShell\v1.0\powershell.exe");
+        let command = format!(
+            r#""{}" -NoProfile -NonInteractive -Command "$p = Start-Process -FilePath ping.exe -ArgumentList '-n', '31', '127.0.0.1' -PassThru -NoNewWindow; Set-Content -Path child.pid -Value $p.Id -Encoding ascii""#,
+            powershell.display(),
+        );
+        let mut supervisor = Supervisor::default();
+        supervisor.start(&directory, &command).unwrap();
+
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let child = supervisor.child.as_mut().unwrap();
+        let status = loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                break status;
+            }
+            assert!(Instant::now() < deadline, "the command shell did not exit");
+            thread::sleep(Duration::from_millis(30));
+        };
+        assert!(status.success());
+        let pid: u32 = std::fs::read_to_string(&pid_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        let handle = unsafe { OpenProcess(PROCESS_SYNCHRONIZE, 0, pid) };
+        assert!(!handle.is_null(), "the descendant was not running");
+        let handle = unsafe { OwnedHandle::from_raw_handle(handle) };
+        assert_eq!(
+            unsafe { WaitForSingleObject(handle.as_raw_handle(), 0) },
+            WAIT_TIMEOUT
+        );
+
+        assert!(!supervisor.snapshot().running);
+        assert_eq!(
+            unsafe { WaitForSingleObject(handle.as_raw_handle(), 5000) },
+            WAIT_OBJECT_0,
+            "the descendant survived closing the job",
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn frozen_engine_serves_a_ledger_from_a_path_with_spaces() {
+        use crate::engine::{engine_args, resolve_engine};
+
+        let Ok(engine) = resolve_engine(None) else {
+            assert!(
+                std::env::var_os("CI").is_none(),
+                "the frozen engine is required in CI"
+            );
+            return;
+        };
+        let directory =
+            std::env::temp_dir().join(format!("BeanDesk Smoke 账套 {}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(
+            directory.join("main.bean"),
+            "option \"title\" \"Windows smoke ledger\"\n2026-01-01 open Assets:Cash CNY\n",
+        )
+        .unwrap();
+
+        std::fs::write(directory.join("bad ledger.bean"), "invalid ledger\n").unwrap();
+        let rejected = crate::process::background_command(&engine)
+            .current_dir(&directory)
+            .args(["check", "bad ledger.bean"])
+            .output()
+            .unwrap();
+        assert!(!rejected.status.success());
+        assert!(!rejected.stderr.is_empty(), "bean-check lost its diagnostics");
+
+        let port = std::net::TcpListener::bind(("127.0.0.1", 0))
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        let origin = format!("http://127.0.0.1:{port}");
+        let mut supervisor = Supervisor::default();
+        supervisor
+            .start_program(&directory, &engine, &engine_args(&origin).unwrap())
+            .unwrap();
+        let url = format!("{origin}/");
+        let deadline = Instant::now() + Duration::from_secs(20);
+        loop {
+            assert!(supervisor.snapshot().running, "frozen Fava exited early");
+            if ureq::get(&url).timeout(Duration::from_secs(1)).call().is_ok() {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "frozen Fava did not answer at {url}"
+            );
+            thread::sleep(Duration::from_millis(100));
+        }
+        supervisor.stop();
+        assert!(std::net::TcpStream::connect(("127.0.0.1", port)).is_err());
+        std::fs::remove_dir_all(directory).unwrap();
     }
 }

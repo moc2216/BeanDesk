@@ -29,6 +29,8 @@ make docs-sync           # 手册导出到 web/public/docs
 | `web/src/components/` | 期间选择器、表头、图表容器、UI 原语 |
 | `web/src/lib/` | 格式化、账本模型、图表主题、密度、i18n |
 | `src-tauri/` | Rust 外壳、引擎、手册窗口、备份、MCP |
+| `src-tauri/src/process.rs` | 子进程启动：Windows Job Object、无窗口标志 |
+| `engine/restic-assets.txt` | restic 各平台资产与 SHA-256（脚本与测试共用） |
 | `docs/content/docs/` | 手册源文件（中英各一份） |
 | `web/public/docs/` | 手册导出（生成物，git 忽略） |
 | `design-review/` | 本次设计评审与复盘材料（非发布物） |
@@ -73,3 +75,10 @@ make docs-sync           # 手册导出到 web/public/docs
 - [ ] `NOTICE`、`LICENSE`、`SECONDARY-DEVELOPMENT.md` 存在；
 - [ ] 上游 remote 与合并策略明确；
 - [ ] 新增决策写入 `docs/decisions/`，不要只留在聊天里。
+
+## 7. Windows（x64）
+
+- 代码已支持 Windows：进程树用 Job Object（`CREATE_SUSPENDED` 后加入作业再恢复），引擎/restic 按 `.exe` 解析，规则审核键统一盘符与 UNC 写法；
+- CI 新增 `windows` 作业：Web lint/test/build、Rust check/test、冻结引擎、`restic.exe`、NSIS 静默安装与安装目录内 `bean-check`/`restic version` 校验；
+- 改动清单、实机验证步骤与未验证项：`design-review/WINDOWS-PORT.md`；
+- **尚未实机验证**：托盘、单实例、窗口焦点、控制台是否闪烁、文件占用提示。发布前需在一台干净的 Windows x64 上按该文档第 2 节走一遍。

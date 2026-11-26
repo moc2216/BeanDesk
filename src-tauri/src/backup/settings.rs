@@ -783,13 +783,18 @@ mod tests {
         settings.archive_auto = true;
         assert!(!settings.archives_on_change());
         assert!(!settings.should_watch());
-        settings.dests.push(StoredDest::local("one".into(), "/tmp"));
+        let temp = std::env::temp_dir();
+        settings
+            .dests
+            .push(StoredDest::local("one".into(), &temp.to_string_lossy()));
         assert!(settings.has_ready_archive_dest());
         assert!(settings.archives_on_change());
         assert!(settings.should_watch());
         settings.dests = vec![StoredDest::local(
             "gone".into(),
-            &format!("/tmp/beandesk-missing-ready-{}", std::process::id()),
+            &temp
+                .join(format!("beandesk-missing-ready-{}", std::process::id()))
+                .to_string_lossy(),
         )];
         assert!(!settings.has_ready_archive_dest());
         assert!(!settings.archives_on_change());

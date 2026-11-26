@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::process::Command;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -435,13 +434,13 @@ struct CheckOutcome {
 
 fn run_check(directory: &Path) -> Result<CheckOutcome, String> {
     let output = if let Ok(engine) = resolve_engine(None) {
-        Command::new(engine)
+        crate::process::background_command(engine)
             .args(["check", "main.bean"])
             .current_dir(directory)
             .output()
             .map_err(|error| format!("check: {error}"))?
     } else {
-        Command::new("bean-check")
+        crate::process::background_command("bean-check")
             .arg("main.bean")
             .current_dir(directory)
             .output()

@@ -12,7 +12,8 @@
 - 环图/树图「查看明细」折叠列表（键盘可读）；
 - 设置「界面密度：舒适/紧凑」；
 - 未折算币种警告、空期间与失败态、KPI 三态；
-- NOTICE、二次开发说明（中英）、HANDOFF、决策记录、CONTRIBUTING、CI。
+- NOTICE、二次开发说明（中英）、HANDOFF、决策记录、CONTRIBUTING、CI；
+- Windows x64：Job Object 托管进程树、引擎与 restic 资源校验、NSIS 安装包与 windows CI 作业。
 
 ### Changed
 
@@ -21,7 +22,8 @@
 - 货币符号固定（¥ / US$）；BTC/ETH 最多 8 位小数；
 - 分类色按类别键稳定绑定，采用评审后的 B 色板；
 - 表格正文 14px、轴字 12px；图表轴字随主题取色；
-- 顶栏收敛为四个纯图标；手册窗口 Esc 关闭。
+- 顶栏收敛为四个纯图标；手册窗口 Esc 关闭；
+- 内置引擎改为保留标准流的 CLI 构建，Windows 下由桌面端无窗口启动。
 
 ### Fixed
 

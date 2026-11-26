@@ -5,6 +5,7 @@ mod ledger_init;
 mod ledger_preset;
 mod mcp;
 mod policy_integrity;
+mod process;
 mod supervisor;
 #[cfg(desktop)]
 mod tray;

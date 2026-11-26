@@ -3,11 +3,14 @@
 # src-tauri/binaries/engine/{beandesk-engine[.exe],_internal/}
 set -euo pipefail
 
+HOST_OS="$(uname -s)"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Actions passes python-path. `python3` on PATH may be a different arch.
 if [ -n "${PYTHON:-}" ]; then
     HOST_PYTHON="$PYTHON"
+elif [[ "$HOST_OS" == MINGW* || "$HOST_OS" == MSYS* ]] && command -v python >/dev/null 2>&1; then
+    HOST_PYTHON="$(command -v python)"
 elif command -v python3 >/dev/null 2>&1; then
     HOST_PYTHON="$(command -v python3)"
 elif command -v python >/dev/null 2>&1; then
@@ -17,8 +20,16 @@ else
     exit 1
 fi
 
+EXE_NAME=beandesk-engine
+case "$HOST_OS" in
+    MINGW* | MSYS* | CYGWIN*)
+        HOST_PYTHON="$(cygpath -u "$HOST_PYTHON")"
+        EXE_NAME=beandesk-engine.exe
+        ;;
+esac
+
 CHECK_ARCH=
-if [ "$(uname -s)" = Darwin ] && [ -n "${ENGINE_ARCH:-}" ]; then
+if [ "$HOST_OS" = Darwin ] && [ -n "${ENGINE_ARCH:-}" ]; then
     CHECK_ARCH=1
 fi
 
@@ -60,21 +71,13 @@ mkdir -p "$ROOT/src-tauri/binaries"
 )
 SRC="$ROOT/engine/dist/beandesk-engine"
 DEST="$ROOT/src-tauri/binaries/engine"
-if [ ! -d "$SRC" ]; then
-    echo "freeze produced no directory at $SRC" >&2
+if [ ! -f "$SRC/$EXE_NAME" ] || [ ! -d "$SRC/_internal" ]; then
+    echo "onedir freeze missing $SRC/$EXE_NAME or $SRC/_internal" >&2
     exit 1
 fi
 rm -rf "$DEST"
 mv "$SRC" "$DEST"
-if [ -f "$DEST/beandesk-engine.exe" ]; then
-    EXE="$DEST/beandesk-engine.exe"
-else
-    EXE="$DEST/beandesk-engine"
-fi
-if [ ! -f "$EXE" ] || [ ! -d "$DEST/_internal" ]; then
-    echo "onedir freeze missing $EXE or $DEST/_internal" >&2
-    exit 1
-fi
+EXE="$DEST/$EXE_NAME"
 chmod +x "$EXE" 2>/dev/null || true
 if [ -n "$CHECK_ARCH" ]; then
     arches="$(lipo -archs "$EXE" 2>/dev/null || true)"

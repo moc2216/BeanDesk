@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
-fn engine_exe_name() -> &'static str {
-    if cfg!(windows) {
+fn engine_exe_name(windows: bool) -> &'static str {
+    if windows {
         "beandesk-engine.exe"
     } else {
         "beandesk-engine"
@@ -16,7 +16,7 @@ fn looks_like_engine(path: &Path) -> bool {
 }
 
 pub fn resolve_engine(app: Option<&AppHandle>) -> Result<PathBuf, String> {
-    let name = engine_exe_name();
+    let name = engine_exe_name(cfg!(windows));
     let mut dirs = Vec::new();
     if let Some(handle) = app {
         if let Ok(path) = handle.path().resolve("engine", BaseDirectory::Resource) {
@@ -99,11 +99,8 @@ mod tests {
 
     #[test]
     fn exe_name_is_stable() {
-        if cfg!(windows) {
-            assert_eq!(engine_exe_name(), "beandesk-engine.exe");
-        } else {
-            assert_eq!(engine_exe_name(), "beandesk-engine");
-        }
+        assert_eq!(engine_exe_name(true), "beandesk-engine.exe");
+        assert_eq!(engine_exe_name(false), "beandesk-engine");
     }
 
     #[test]
@@ -142,7 +139,7 @@ mod tests {
     fn a_lone_file_is_not_the_engine() {
         let root = std::env::temp_dir().join(format!("beandesk-lone-exe-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();
-        let path = root.join(engine_exe_name());
+        let path = root.join(engine_exe_name(cfg!(windows)));
         std::fs::write(&path, b"").unwrap();
         assert!(!looks_like_engine(&path));
         let _ = std::fs::remove_dir_all(&root);
@@ -153,7 +150,7 @@ mod tests {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("binaries")
             .join("engine")
-            .join(engine_exe_name());
+            .join(engine_exe_name(cfg!(windows)));
         if looks_like_engine(&path) {
             assert_eq!(resolve_engine(None).unwrap(), path);
         } else {

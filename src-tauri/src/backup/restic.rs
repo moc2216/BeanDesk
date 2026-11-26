@@ -22,8 +22,8 @@ pub struct SnapshotWrite {
     pub location: String,
 }
 
-fn restic_name() -> &'static str {
-    if cfg!(windows) {
+fn restic_name(windows: bool) -> &'static str {
+    if windows {
         "restic.exe"
     } else {
         "restic"
@@ -31,7 +31,7 @@ fn restic_name() -> &'static str {
 }
 
 pub fn resolve_restic(app: Option<&AppHandle>) -> Result<PathBuf, String> {
-    let name = restic_name();
+    let name = restic_name(cfg!(windows));
     let mut dirs = Vec::new();
     if let Some(handle) = app {
         if let Ok(path) = handle.path().resolve("restic", BaseDirectory::Resource) {
@@ -135,7 +135,7 @@ impl Repo {
     }
 
     fn command_unlocked(&self, password_file: &Path) -> Command {
-        let mut command = Command::new(&self.binary);
+        let mut command = crate::process::background_command(&self.binary);
         for option in &self.options {
             command.arg(option);
         }
@@ -698,11 +698,34 @@ mod tests {
 
     #[test]
     fn restic_binary_name_is_stable() {
-        if cfg!(windows) {
-            assert_eq!(restic_name(), "restic.exe");
-        } else {
-            assert_eq!(restic_name(), "restic");
-        }
+        assert_eq!(restic_name(true), "restic.exe");
+        assert_eq!(restic_name(false), "restic");
+    }
+
+    #[test]
+    fn restic_asset_manifest_covers_the_release_targets() {
+        let manifest = include_str!("../../../engine/restic-assets.txt");
+        let asset_by_target = manifest
+            .lines()
+            .map(|line| {
+                let fields: Vec<_> = line.split_whitespace().collect();
+                let [target, asset, hash] = fields.as_slice() else {
+                    panic!("invalid restic asset row: {line}");
+                };
+                assert_eq!(hash.len(), 64);
+                assert!(hash.bytes().all(|byte| byte.is_ascii_hexdigit()));
+                (*target, *asset)
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        let expected = std::collections::BTreeMap::from([
+            ("aarch64-apple-darwin", "darwin_arm64.bz2"),
+            ("x86_64-apple-darwin", "darwin_amd64.bz2"),
+            ("x86_64-unknown-linux-gnu", "linux_amd64.bz2"),
+            ("aarch64-unknown-linux-gnu", "linux_arm64.bz2"),
+            ("x86_64-pc-windows-msvc", "windows_amd64.zip"),
+        ]);
+        assert_eq!(asset_by_target, expected);
+        assert_eq!(manifest.lines().count(), expected.len());
     }
 
     #[test]

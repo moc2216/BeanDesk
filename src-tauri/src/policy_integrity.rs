@@ -464,19 +464,33 @@ fn lookup_key(store: &PolicyFileStore, directory: &Path) -> Option<String> {
 
 fn comparable_key(value: &str) -> String {
     let normalized = nfc(value);
-    let without_unc = normalized.strip_prefix(r"\\?\").unwrap_or(&normalized);
-    let without_private = without_unc.strip_prefix("/private").unwrap_or(without_unc);
-    let trimmed = without_private.trim_end_matches(['/', '\\']);
-    if let Some((drive, rest)) = trimmed.split_once(':') {
-        if drive.len() == 1 {
-            if let Some(letter) = drive.chars().next() {
-                if letter.is_ascii_alphabetic() {
-                    return format!("{}:{rest}", letter.to_ascii_uppercase());
-                }
-            }
-        }
+    let path = normalized.strip_prefix(r"\\?\").unwrap_or(&normalized);
+    if let Some(unc) = normalized.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{}", unc.trim_end_matches('\\'));
     }
-    trimmed.to_string()
+    if path.starts_with(r"\\") {
+        return path.trim_end_matches('\\').to_string();
+    }
+    if let [drive, b':', b'/' | b'\\', ..] = path.as_bytes()
+        && drive.is_ascii_alphabetic()
+    {
+        let rest = path[2..].replace('/', "\\");
+        // Keep the root separator so a drive root never equals a drive-relative path.
+        return format!(
+            "{}:\\{}",
+            drive.to_ascii_uppercase() as char,
+            rest.trim_matches('\\')
+        );
+    }
+    let path = if normalized.starts_with("/private/") {
+        &normalized["/private".len()..]
+    } else {
+        &normalized
+    };
+    if path == "/" {
+        return path.to_string();
+    }
+    path.trim_end_matches('/').to_string()
 }
 
 fn disk_locale(directory: &Path) -> Option<String> {
@@ -559,6 +573,20 @@ narration_regex = "还股东借款|还垫付款"
             PolicyLint::Checked(items) => items,
             PolicyLint::LoadError(error) => panic!("{error}"),
         }
+    }
+
+    #[test]
+    fn windows_ledger_keys_accept_drive_and_unc_aliases() {
+        assert_eq!(
+            comparable_key(r"\\?\C:\Books\财务"),
+            comparable_key("c:/Books/财务/"),
+        );
+        assert_eq!(
+            comparable_key(r"\\?\UNC\server\share\Books"),
+            comparable_key(r"\\server\share\Books\"),
+        );
+        assert_ne!(comparable_key("C:Books"), comparable_key("C:/Books"));
+        assert_ne!(comparable_key("/privateer/ledger"), comparable_key("er/ledger"));
     }
 
     #[test]

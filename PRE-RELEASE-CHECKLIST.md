@@ -26,6 +26,12 @@
 - [ ] 发布页提供对应源码标签与构建脚本（AGPL-3.0 第 6 条）；
 - [ ] 不删除原作者版权声明；新增依赖许可证兼容 AGPL。
 
+## 3b. 双平台产物
+
+- [ ] GitHub Actions `windows` 作业通过（Web + Rust + 冻结引擎 + NSIS 安装校验）；
+- [ ] 发布草稿同时含 `*_x64-setup.exe`（Windows）与 `.dmg`（macOS），记录各自 SHA-256；
+- [ ] Windows 实机验收按 `design-review/WINDOWS-PORT.md` 第 2 节执行（连接、报表、托盘、单实例、备份恢复、卸载）。
+
 ## 4. 文档
 
 - [ ] `make docs-sync` 后，手册含「二次开发说明」（中英）；

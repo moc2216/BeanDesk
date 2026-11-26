@@ -22,20 +22,31 @@ if [ -z "$TARGET" ]; then
     esac
 fi
 
-case "$TARGET" in
-    aarch64-apple-darwin) ASSET=darwin_arm64.bz2; SHA=7be0a144ccc377880f294204aa271d76e4b79554b42a751151d425ce6ebac143 ;;
-    x86_64-apple-darwin) ASSET=darwin_amd64.bz2; SHA=c38d579622cf602f665234c5a8c315030b6cf70656028fe6dc29a786b60e5f35 ;;
-    x86_64-unknown-linux-gnu) ASSET=linux_amd64.bz2; SHA=f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c ;;
-    aarch64-unknown-linux-gnu) ASSET=linux_arm64.bz2; SHA=a5f64aaab53d51e311fa3829124c5b703f2d14cf187d8640b6be3b2b49376465 ;;
-    x86_64-pc-windows-msvc) ASSET=windows_amd64.zip; SHA=da948ad707ed690426473aaba2046cd61f8f90f6f0e7dab6be0d5796531de67d ;;
-    *) echo "no restic build for target $TARGET" >&2; exit 1 ;;
-esac
+ASSET=
+while read -r triple asset digest; do
+    if [ "$triple" = "$TARGET" ]; then
+        ASSET="$asset"
+        SHA="$digest"
+        break
+    fi
+done < "$ROOT/engine/restic-assets.txt"
+if [ -z "$ASSET" ]; then
+    echo "no restic build for target $TARGET" >&2
+    exit 1
+fi
 
-PYTHON="$(command -v python3 || command -v python || true)"
+case "$TARGET" in
+    *-windows-*) PYTHON="${PYTHON:-$(command -v python || command -v python3 || true)}" ;;
+    *) PYTHON="${PYTHON:-$(command -v python3 || command -v python || true)}" ;;
+esac
 if [ -z "$PYTHON" ]; then
     echo "python3 is needed to check and unpack restic" >&2
     exit 1
 fi
+
+case "$(uname -s)" in
+    MINGW* | MSYS* | CYGWIN*) PYTHON="$(cygpath -u "$PYTHON")" ;;
+esac
 
 NAME="restic_${VERSION}_${ASSET}"
 WORK="$(mktemp -d)"
