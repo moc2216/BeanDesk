@@ -18,7 +18,7 @@ If a session is active, switching modes requires confirmation and disconnects th
 - General: Language preference, appearance theme (light, dark, or system), and local MCP configuration.
 - Ledger Connection: Working directory picker, connection mode switcher, supervision controls, and Switch language pack (writes `.beandesk` and `policies/base/rules.toml` together; approved custom rules are kept).
 - Backup: Local Git snapshots and restic encrypted backups (available after Initialize Ledger, Upgrade, or Adopt as standard ledger; see [First book](/setup/first-book) and [Existing Beancount](/setup/existing)). Restoring a ledger does not restore BeanDesk's `policy.json`; review and approve or revert policies in the main window.
-- About: App name, software updates, and license.
+- About: App name, version, and license.
 
 ## Connection Logs
 
@@ -34,6 +34,6 @@ Clicking the book icon in the header opens this manual in a dedicated secondary 
 
 Closing the main or handbook window hides the application to the system tray while keeping background processes and watch listeners active. Click the tray icon or choose Show to focus the main window. Choosing Quit from the tray exits the application completely and terminates any Fava process group started by this window. Launching the desktop app again brings the running instance to the foreground.
 
-## Software Updates
+## Updates
 
-Check for updates from Settings → About. Available on macOS, Windows, and Linux.
+This build ships without an update channel. To upgrade, install a newer release over the current version; ledger connections and settings are kept.
