@@ -34,7 +34,8 @@ import {
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
-import { presentBalance } from '@/lib/format'
+import { displayAccountName, presentBalance } from '@/lib/format'
+import { CHART_COLORS } from '@/lib/chart-theme'
 import { visibleAccount } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -210,6 +211,150 @@ function AccountSection({
         </Table>
       </div>
       {totalLabel && total ? <TotalLine label={totalLabel} amount={total} /> : null}
+    </section>
+  )
+}
+
+function OverviewStrip({ data }: { data: BalanceSheetData }) {
+  const { t, formatCurrency } = useI18n()
+  const currency = data.operating_currency
+  const assets = presentBalance('assets', data.totals.assets)
+  const liabilities = presentBalance('liabilities', data.totals.liabilities)
+  const net = assets - liabilities
+  const ratio = assets > 0 ? (liabilities / assets) * 100 : null
+  const cells = [
+    { label: t('balanceSheet.totalAssets'), value: formatCurrency(assets, currency) },
+    { label: t('balanceSheet.totalLiabilities'), value: formatCurrency(liabilities, currency) },
+    { label: t('charts.netWorth'), value: formatCurrency(net, currency) },
+    {
+      label: t('balanceSheet.debtRatio'),
+      value: ratio === null ? '—' : ratio.toFixed(1) + '%',
+    },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 overflow-hidden rounded-lg border bg-card lg:grid-cols-4">
+      {cells.map((cell, index) => (
+        <div
+          key={cell.label}
+          className={cn(
+            'px-4 py-3',
+            index > 0 && 'border-l border-border',
+            index === 2 && 'max-lg:border-t max-lg:border-l-0',
+            index === 3 && 'max-lg:border-t',
+          )}
+        >
+          <div className="text-[11px] text-muted-foreground">{cell.label}</div>
+          <div className="mt-1 text-[22px] font-semibold tracking-tight tabular-nums">
+            {cell.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function AssetComposition({ data }: { data: BalanceSheetData }) {
+  const { t } = useI18n()
+  const rows = useMemo(() => {
+    const nodes = sectionChildren(data.sections, 'assets').filter((node) =>
+      visibleAccount(node.total, node.children),
+    )
+    const values = nodes
+      .map((node, index) => ({
+        name: displayAccountName(node.account),
+        value: presentBalance('assets', node.total),
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      }))
+      .filter((row) => row.value > 0)
+      .sort((a, b) => b.value - a.value)
+    const total = values.reduce((sum, row) => sum + row.value, 0)
+    const top = values.slice(0, 6)
+    const rest = values.slice(6).reduce((sum, row) => sum + row.value, 0)
+    return {
+      items:
+        rest > 0
+          ? [
+              ...top,
+              {
+                name: t('balanceSheet.otherAssets'),
+                value: rest,
+                color: CHART_COLORS[CHART_COLORS.length - 1],
+              },
+            ]
+          : top,
+      total,
+    }
+  }, [data.sections, t])
+
+  const radius = 54
+  const circumference = 2 * Math.PI * radius
+  let offset = 0
+
+  return (
+    <section className="flex min-w-0 flex-col gap-2">
+      <h2 className="text-[0.8rem] font-medium">{t('balanceSheet.composition')}</h2>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-center gap-4">
+          <svg viewBox="0 0 150 150" className="size-[132px] shrink-0">
+            <g transform="rotate(-90 75 75)">
+              {rows.items.map((item) => {
+                const length = rows.total > 0 ? (item.value / rows.total) * circumference : 0
+                const dash = Math.max(length - 1.5, 0) + ' ' + circumference
+                const dashOffset = -offset
+                offset += length
+                return (
+                  <circle
+                    key={item.name}
+                    cx="75"
+                    cy="75"
+                    r={radius}
+                    fill="none"
+                    stroke={item.color}
+                    strokeWidth="16"
+                    strokeDasharray={dash}
+                    strokeDashoffset={dashOffset}
+                  />
+                )
+              })}
+            </g>
+            <text
+              x="75"
+              y="73"
+              textAnchor="middle"
+              className="fill-foreground text-[13px] font-semibold tabular-nums"
+            >
+              {rows.total > 0
+                ? data.operating_currency === 'CNY'
+                  ? (rows.total / 10000).toFixed(1) + '万'
+                  : (rows.total / 1000).toFixed(1) + 'k'
+                : '—'}
+            </text>
+            <text
+              x="75"
+              y="88"
+              textAnchor="middle"
+              className="fill-muted-foreground text-[9px]"
+            >
+              {t('balanceSheet.totalAssets')}
+            </text>
+          </svg>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {rows.items.map((item) => (
+              <div key={item.name} className="flex items-center gap-2 text-[11px]">
+                <span
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{ background: item.color }}
+                />
+                <span className="truncate text-muted-foreground">{item.name}</span>
+                <span className="ml-auto tabular-nums">
+                  {rows.total > 0 ? ((item.value / rows.total) * 100).toFixed(1) + '%' : '—'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
@@ -395,7 +540,13 @@ export function BalanceSheet() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <AccountForm data={data} />
+        <div className="flex flex-col gap-4">
+          <OverviewStrip data={data} />
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <AccountForm data={data} />
+            <AssetComposition data={data} />
+          </div>
+        </div>
       )}
     </div>
   )
