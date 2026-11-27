@@ -107,7 +107,7 @@ function ChartFrame({
   className?: string
 }) {
   return (
-    <section className={cn('density-card rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]', className)}>
+    <section className={cn('density-card rounded-lg border border-border bg-card p-4', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -562,9 +562,9 @@ export function Charts() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpiItems.map((item) => (
-          <div key={item.label} className="density-card rounded-2xl border border-border/80 bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-            <div className="text-xs text-muted-foreground">{item.label}</div>
-            <div className="mt-2 text-2xl leading-8 font-semibold tracking-tight tabular-nums">
+          <div key={item.label} className="density-card rounded-lg border border-border bg-card p-4">
+            <div className="text-[11px] text-muted-foreground">{item.label}</div>
+            <div className="mt-1.5 text-[26px] leading-8 font-semibold tracking-tight tabular-nums">
               {item.value ?? '—'}
             </div>
             {failed ? (

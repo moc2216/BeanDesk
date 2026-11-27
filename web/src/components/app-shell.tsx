@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={cn('flex flex-col bg-background', settingsDesktop ? 'h-svh overflow-hidden' : 'min-h-svh')}>
       <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-1 px-2 sm:gap-2 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 w-full max-w-[1320px] items-center justify-between gap-1 px-2 sm:gap-2 sm:px-6 lg:px-8">
           <div className="flex shrink-0 items-center gap-1">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -157,6 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className={({ isActive }) =>
                     cn(
                       buttonVariants({ variant: 'ghost' }),
+                      'h-8 px-2.5 text-[12.5px]',
                       isActive && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
                     )
                   }
@@ -191,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={
           settingsDesktop
             ? 'flex min-h-0 w-full flex-1 flex-col'
-            : 'mx-auto flex w-full max-w-7xl flex-col gap-6 px-3 py-6 sm:px-6 sm:py-8 lg:px-8'
+            : 'mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 py-6 sm:px-6 sm:py-7 lg:px-7'
         }
       >
         {hideLedgerErrors ? null : <LedgerErrors />}

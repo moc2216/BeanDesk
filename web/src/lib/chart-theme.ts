@@ -2,35 +2,35 @@ import type { EChartsOption } from 'echarts'
 
 // Categorical palette: no pure red/green so money semantics stay uncontested.
 export const CHART_COLORS = [
-  '#4f6ef7',
-  '#0f766e',
-  '#087ba8',
-  '#a44982',
-  '#5b64ac',
-  '#b45309',
-  '#8653ae',
-  '#64748b',
+  '#4693f1',
+  '#00a8cf',
+  '#00b08d',
+  '#a975e0',
+  '#cc68b9',
+  '#da720d',
+  '#7787f3',
+  '#8b939f',
 ]
 
 // Stable category colours: the key travels with the category, not its rank.
 export const CATEGORY_COLORS: Record<string, string> = {
-  'assetClass:cash': '#4f6ef7',
-  'assetClass:fixedIncome': '#5b64ac',
-  'assetClass:equity': '#0f766e',
-  'assetClass:crypto': '#8653ae',
-  'assetClass:commodity': '#a44982',
-  'assetClass:property': '#4d67b9',
-  'assetClass:other': '#64748b',
-  'assetGroup:investment': '#087ba8',
-  'expense:housing': '#0f766e',
-  'expense:socialSecurity': '#4f6ef7',
-  'expense:food': '#087ba8',
-  'expense:transport': '#a44982',
-  'expense:shopping': '#5b64ac',
-  'expense:health': '#b45309',
-  'expense:education': '#8653ae',
-  'expense:other': '#64748b',
-  'rollup:other': '#64748b',
+  'assetClass:cash': '#4693f1',
+  'assetClass:fixedIncome': '#00a8cf',
+  'assetClass:equity': '#00b08d',
+  'assetClass:crypto': '#a975e0',
+  'assetClass:commodity': '#da720d',
+  'assetClass:property': '#cc68b9',
+  'assetClass:other': '#8b939f',
+  'assetGroup:investment': '#7787f3',
+  'expense:housing': '#00b08d',
+  'expense:socialSecurity': '#4693f1',
+  'expense:food': '#00a8cf',
+  'expense:transport': '#7787f3',
+  'expense:shopping': '#cc68b9',
+  'expense:health': '#da720d',
+  'expense:education': '#a975e0',
+  'expense:other': '#8b939f',
+  'rollup:other': '#8b939f',
 }
 
 function channel(value: number): number {
@@ -77,16 +77,18 @@ export function expenseKey(name: string): string {
 }
 
 export const MONEY = {
-  positive: '#16a34a',
-  negative: '#dc2626',
-  neutral: '#4f6ef7',
+  positive: '#24a148',
+  negative: '#da1e28',
+  neutral: '#0f62fe',
   warning: '#d97706',
 }
 
 export function axisTextColor(isDark: boolean): string {
-  return isDark ? '#a1a5ab' : '#6b6f77'
+  return isDark ? '#8a8f98' : '#6e6e76'
 }
-const SPLIT = 'rgba(140, 143, 160, 0.18)'
+function splitLineColor(isDark: boolean): string {
+  return isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
+}
 
 export const tooltipStyle: EChartsOption['tooltip'] = {
   backgroundColor: 'rgba(23, 23, 28, 0.94)',
@@ -112,7 +114,7 @@ export function valueAxis(format: (value: number) => string, isDark = false) {
     axisLine: { show: false },
     axisTick: { show: false },
     axisLabel: { color: axisTextColor(isDark), fontSize: 12, formatter: (value: number) => format(value) },
-    splitLine: { lineStyle: { color: SPLIT } },
+    splitLine: { lineStyle: { color: splitLineColor(isDark) } },
   }
 }
 
