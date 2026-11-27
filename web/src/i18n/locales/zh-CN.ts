@@ -136,6 +136,7 @@ export const zhCN = {
     totalLiabilitiesAndEquity: '负债和所有者权益总计',
     debtRatio: '资产负债率',
     composition: '资产构成',
+    cashFlow: '现金流',
     otherAssets: '其他资产',
     unclosedEarnings: '未结转损益',
     earnings: '本期损益',

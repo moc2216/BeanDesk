@@ -26,6 +26,7 @@ import type { MessageKey } from '@/i18n/locales/en'
 import { useTimeFilter } from '@/lib/time-context'
 import {
   fetchBalanceSheet,
+  fetchCashFlow,
   type AccountNode,
   type BalanceSheet as BalanceSheetData,
   type BalanceSheetSection,
@@ -35,8 +36,9 @@ import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
 import { displayAccountName, presentBalance } from '@/lib/format'
-import { colorForCategory } from '@/lib/chart-theme'
+import { CHART_COLORS, colorForCategory } from '@/lib/chart-theme'
 import { classOf, loadClassMap } from '@/lib/asset-classes'
+import { CASH_FLOW_SECTIONS, CASH_FLOW_SECTION_TITLE } from '@/lib/cash-flow'
 import { visibleAccount } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -234,11 +236,19 @@ function OverviewStrip({ data }: { data: BalanceSheetData }) {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {cells.map((cell) => (
-        <div key={cell.label} className="density-card rounded-2xl border border-border bg-card p-5">
-          <div className="text-xs text-muted-foreground">{cell.label}</div>
-          <div className="mt-2 text-[34px] leading-10 font-semibold tracking-tight tabular-nums">
+    <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-4">
+      {cells.map((cell, index) => (
+        <div
+          key={cell.label}
+          className={cn(
+            'px-5 py-4',
+            index > 0 && 'border-l border-border',
+            index === 2 && 'max-lg:border-t max-lg:border-l-0',
+            index === 3 && 'max-lg:border-t',
+          )}
+        >
+          <div className="text-[11px] text-muted-foreground">{cell.label}</div>
+          <div className="mt-1 text-[20px] font-semibold tracking-tight tabular-nums">
             {cell.value}
           </div>
         </div>
@@ -430,6 +440,70 @@ function AccountForm({ data }: { data: BalanceSheetData }) {
   )
 }
 
+function CashFlowMini({ time, currency }: { time: string; currency: string }) {
+  const { t, formatCurrency } = useI18n()
+  const query = useQuery({
+    queryKey: ['balance-cash', time],
+    queryFn: ({ signal }) => fetchCashFlow(time || undefined, signal),
+    placeholderData: (previous) => previous,
+  })
+  const data = query.data
+  if (!data) return null
+  if (!data.hasCashAccounts) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">{t('balanceSheet.cashFlow')}</h2>
+        <p className="mt-2 text-[11px] text-muted-foreground">{t('cashFlow.unwiredTitle')}</p>
+      </section>
+    )
+  }
+  const max = Math.max(
+    ...CASH_FLOW_SECTIONS.map((section) => Math.abs(data.sections[section])),
+    1,
+  )
+  const signed = (value: number) =>
+    `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatCurrency(Math.abs(value), currency)}`
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4">
+      <h2 className="text-sm font-semibold">{t('balanceSheet.cashFlow')}</h2>
+      <div className="mt-3 flex flex-col gap-2.5">
+        {CASH_FLOW_SECTIONS.map((section, index) => {
+          const value = data.sections[section]
+          return (
+            <div
+              key={section}
+              className="grid grid-cols-[44px_1fr_auto] items-center gap-2 text-[11px]"
+            >
+              <span className="text-muted-foreground">{t(CASH_FLOW_SECTION_TITLE[section])}</span>
+              <span className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: Math.max((Math.abs(value) / max) * 100, 2) + '%',
+                    backgroundColor: CHART_COLORS[index === 0 ? 0 : index === 1 ? 6 : 4],
+                  }}
+                />
+              </span>
+              <span className="tabular-nums">{signed(value)}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-3 flex items-baseline justify-between border-t border-border pt-2 text-[11px]">
+        <span className="text-muted-foreground">{t('cashFlow.netIncrease')}</span>
+        <span
+          className={cn(
+            'font-medium tabular-nums',
+            data.net >= 0 ? 'text-positive' : 'text-destructive',
+          )}
+        >
+          {signed(data.net)}
+        </span>
+      </div>
+    </section>
+  )
+}
+
 export function BalanceSheet() {
   const { t, formatDate, formatCurrency } = useI18n()
   const { timeFilter } = useTimeFilter()
@@ -541,7 +615,10 @@ export function BalanceSheet() {
           <OverviewStrip data={data} />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
             <AccountForm data={data} />
-            <AssetComposition data={data} />
+            <div className="flex min-w-0 flex-col gap-4">
+              <AssetComposition data={data} />
+              <CashFlowMini time={timeFilter} currency={data.operating_currency} />
+            </div>
           </div>
         </div>
       )}

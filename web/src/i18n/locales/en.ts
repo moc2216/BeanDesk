@@ -132,6 +132,7 @@ export const en = {
     totalLiabilitiesAndEquity: 'Total Liabilities and Equity',
     debtRatio: 'Debt Ratio',
     composition: 'Asset Mix',
+    cashFlow: 'Cash Flow',
     otherAssets: 'Other Assets',
     unclosedEarnings: 'Unclosed Earnings',
     earnings: 'Current Period Result',
