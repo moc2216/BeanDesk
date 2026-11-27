@@ -77,10 +77,10 @@ export function expenseKey(name: string): string {
 }
 
 export const MONEY = {
-  positive: '#16a34a',
+  positive: '#15803d',
   negative: '#d92d20',
-  neutral: '#0a6cf5',
-  warning: '#d97706',
+  neutral: '#0968ef',
+  warning: '#b45309',
 }
 
 export function axisTextColor(isDark: boolean): string {

@@ -57,7 +57,7 @@
     --card-foreground: #1d1d1f;
     --popover: #ffffff;
     --popover-foreground: #1d1d1f;
-    --primary: #0a6cf5;
+    --primary: #0968ef;
     --primary-foreground: #ffffff;
     --secondary: #f2f2f0;
     --secondary-foreground: #3a3a3c;
@@ -66,11 +66,11 @@
     --accent: #eaf1fe;
     --accent-foreground: #0a5bd0;
     --destructive: #d92d20;
-    --positive: #16a34a;
-    --warning: #d97706;
+    --positive: #15803d;
+    --warning: #b45309;
     --border: #ececea;
     --input: #e3e3e0;
-    --ring: #0a6cf5;
+    --ring: #0968ef;
     --chart-1: #4693f1;
     --chart-2: #00a8cf;
     --chart-3: #00b08d;
