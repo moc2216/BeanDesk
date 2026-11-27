@@ -316,6 +316,7 @@ export const en = {
     totalRevenue: 'Total Revenue',
     totalExpenses: 'Total Expenses',
     profitTitle: 'Net Profit',
+    expenseRatio: 'Expense Ratio',
     empty: 'No profit or loss data for current period',
     errorTitle: 'Unable to load income statement',
   },

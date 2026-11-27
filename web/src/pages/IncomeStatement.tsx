@@ -13,6 +13,7 @@ import {
   amountTone,
 } from '@/components/period-compare'
 import { ReportBar, ReportDay, ReportWhen } from '@/components/report-bar'
+import { ReportSummary } from '@/components/report-summary'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -388,6 +389,24 @@ export function IncomeStatement() {
   const priorLabel = shownPriorKey ? formatPeriodLabel(shownPriorKey, t) : ''
   const canExport = !query.isPlaceholderData
 
+  const revenueTotal = presentIncome('income', income.current)
+  const expenseTotal = presentIncome('expenses', expenses.current)
+  const profitTotal = revenueTotal - expenseTotal
+  const expenseRatio = revenueTotal > 0 ? (expenseTotal / revenueTotal) * 100 : null
+  const summaryCells = [
+    { label: t('income.totalRevenue'), value: formatCurrency(revenueTotal, data.operating_currency) },
+    { label: t('income.totalExpenses'), value: formatCurrency(expenseTotal, data.operating_currency) },
+    {
+      label: t('income.profitTitle'),
+      value: formatCurrency(profitTotal, data.operating_currency),
+      tone: profitTotal >= 0 ? ('positive' as const) : ('negative' as const),
+    },
+    {
+      label: t('income.expenseRatio'),
+      value: expenseRatio === null ? '—' : expenseRatio.toFixed(1) + '%',
+    },
+  ]
+
   return (
     <div className="flex flex-col gap-6">
       <ReportBar
@@ -469,14 +488,17 @@ export function IncomeStatement() {
       )}
 
       {active ? (
-        <Statement
-          currency={data.operating_currency}
-          comparing={comparing}
-          currentLabel={currentLabel}
-          priorLabel={priorLabel}
-          income={income}
-          expenses={expenses}
-        />
+        <>
+          <ReportSummary cells={summaryCells} />
+          <Statement
+            currency={data.operating_currency}
+            comparing={comparing}
+            currentLabel={currentLabel}
+            priorLabel={priorLabel}
+            income={income}
+            expenses={expenses}
+          />
+        </>
       ) : (
         <Empty>
           <EmptyHeader>

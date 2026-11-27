@@ -318,6 +318,7 @@ export const zhCN = {
     totalRevenue: '收入合计',
     totalExpenses: '费用合计',
     profitTitle: '净利润',
+    expenseRatio: '费用率',
     empty: '当前期间无损益数据',
     errorTitle: '无法加载利润表',
   },

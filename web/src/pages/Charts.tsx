@@ -220,8 +220,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
   )
   return (
     <div>
-      <Chart option={option} height={250} />
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
         {parents.map((node) => {
           const color = colorForCategory(expenseKey(node.name))
           return (
@@ -235,6 +234,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
           )
         })}
       </div>
+      <Chart option={option} height={240} />
     </div>
   )
 }

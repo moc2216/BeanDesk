@@ -12,6 +12,7 @@ import {
   amountTone,
 } from '@/components/period-compare'
 import { ReportBar, ReportWhen } from '@/components/report-bar'
+import { ReportSummary } from '@/components/report-summary'
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -269,6 +270,18 @@ export function CashFlow() {
   const currentLabel = formatPeriodLabel(shownTime, t)
   const priorLabel = shownPriorKey ? formatPeriodLabel(shownPriorKey, t) : ''
   const canExport = !query.isPlaceholderData
+  const summaryCells = [
+    ...CASH_FLOW_SECTIONS.map((section) => ({
+      label: t(CASH_FLOW_SECTION_TITLE[section]),
+      value: formatSignedCurrency(data.sections[section], data.operating_currency),
+      tone: data.sections[section] >= 0 ? ('positive' as const) : ('negative' as const),
+    })),
+    {
+      label: t('cashFlow.netIncrease'),
+      value: formatSignedCurrency(data.net, data.operating_currency),
+      tone: data.net >= 0 ? ('positive' as const) : ('negative' as const),
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-6">
@@ -341,12 +354,15 @@ export function CashFlow() {
       ) : null}
 
       {data.hasCashAccounts ? (
-        <Statement
-          data={data}
-          comparison={comparison}
-          currentLabel={currentLabel}
-          priorLabel={priorLabel}
-        />
+        <>
+          <ReportSummary cells={summaryCells} />
+          <Statement
+            data={data}
+            comparison={comparison}
+            currentLabel={currentLabel}
+            priorLabel={priorLabel}
+          />
+        </>
       ) : (
         <Empty>
           <EmptyHeader>
