@@ -186,7 +186,7 @@ function AccountSection({
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[0.8rem] font-medium">{title}</h2>
+      <h2 className="text-sm font-semibold">{title}</h2>
       <ComparePanel>
         {lines.length > 0 ? (
           <StatementTable comparing={comparing}>

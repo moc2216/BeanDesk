@@ -137,7 +137,7 @@ export function Documents() {
             ))}
           </div>
 
-          <div className="hidden overflow-hidden rounded-lg border bg-card sm:block">
+          <div className="hidden overflow-hidden rounded-2xl border bg-card sm:block">
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>

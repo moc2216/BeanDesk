@@ -17,18 +17,18 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'assetClass:cash': '#4693f1',
   'assetClass:fixedIncome': '#00a8cf',
   'assetClass:equity': '#00b08d',
-  'assetClass:crypto': '#a975e0',
-  'assetClass:commodity': '#da720d',
-  'assetClass:property': '#cc68b9',
+  'assetClass:crypto': '#7787f3',
+  'assetClass:commodity': '#cc68b9',
+  'assetClass:property': '#da720d',
   'assetClass:other': '#8b939f',
-  'assetGroup:investment': '#7787f3',
+  'assetGroup:investment': '#00a8cf',
   'expense:housing': '#00b08d',
   'expense:socialSecurity': '#4693f1',
   'expense:food': '#00a8cf',
-  'expense:transport': '#7787f3',
-  'expense:shopping': '#cc68b9',
-  'expense:health': '#da720d',
-  'expense:education': '#a975e0',
+  'expense:transport': '#a975e0',
+  'expense:shopping': '#7787f3',
+  'expense:health': '#cc68b9',
+  'expense:education': '#da720d',
   'expense:other': '#8b939f',
   'rollup:other': '#8b939f',
 }
@@ -77,19 +77,15 @@ export function expenseKey(name: string): string {
 }
 
 export const MONEY = {
-  positive: '#24a148',
-  negative: '#da1e28',
-  neutral: '#0f62fe',
+  positive: '#16a34a',
+  negative: '#d92d20',
+  neutral: '#0a6cf5',
   warning: '#d97706',
 }
 
 export function axisTextColor(isDark: boolean): string {
-  return isDark ? '#8a8f98' : '#6e6e76'
+  return isDark ? '#98989d' : '#6e6e73'
 }
-function splitLineColor(isDark: boolean): string {
-  return isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)'
-}
-
 export const tooltipStyle: EChartsOption['tooltip'] = {
   backgroundColor: 'rgba(23, 23, 28, 0.94)',
   borderWidth: 0,
@@ -104,7 +100,7 @@ export function categoryAxis(data: string[], isDark = false) {
     data,
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: axisTextColor(isDark), fontSize: 12, hideOverlap: true },
+    axisLabel: { color: axisTextColor(isDark), fontSize: 11, hideOverlap: true },
   }
 }
 
@@ -113,8 +109,8 @@ export function valueAxis(format: (value: number) => string, isDark = false) {
     type: 'value' as const,
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: axisTextColor(isDark), fontSize: 12, formatter: (value: number) => format(value) },
-    splitLine: { lineStyle: { color: splitLineColor(isDark) } },
+    axisLabel: { color: axisTextColor(isDark), fontSize: 11, formatter: (value: number) => format(value) },
+    splitLine: { show: false },
   }
 }
 

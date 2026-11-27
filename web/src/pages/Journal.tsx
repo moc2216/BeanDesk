@@ -282,7 +282,7 @@ export function Journal() {
           ) : null}
         </Empty>
       ) : (
-      <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="overflow-hidden rounded-2xl border bg-card">
           {isError ? (
             <Alert variant="destructive" className="m-3">
               <TriangleAlertIcon />

@@ -35,7 +35,8 @@ import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
 import { displayAccountName, presentBalance } from '@/lib/format'
-import { CHART_COLORS } from '@/lib/chart-theme'
+import { colorForCategory } from '@/lib/chart-theme'
+import { classOf, loadClassMap } from '@/lib/asset-classes'
 import { visibleAccount } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -188,8 +189,8 @@ function AccountSection({
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[0.8rem] font-medium">{title}</h2>
-      <div className="overflow-hidden rounded-lg border bg-card [&_td:last-child]:pe-4 [&_th:last-child]:pe-4">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <div className="overflow-hidden rounded-2xl border bg-card [&_td:last-child]:pe-4 [&_th:last-child]:pe-4">
         <Table>
           <TableHeader>
             <TableRow>
@@ -233,19 +234,11 @@ function OverviewStrip({ data }: { data: BalanceSheetData }) {
   ]
 
   return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-lg border bg-card lg:grid-cols-4">
-      {cells.map((cell, index) => (
-        <div
-          key={cell.label}
-          className={cn(
-            'px-4 py-3',
-            index > 0 && 'border-l border-border',
-            index === 2 && 'max-lg:border-t max-lg:border-l-0',
-            index === 3 && 'max-lg:border-t',
-          )}
-        >
-          <div className="text-[11px] text-muted-foreground">{cell.label}</div>
-          <div className="mt-1 text-[22px] font-semibold tracking-tight tabular-nums">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {cells.map((cell) => (
+        <div key={cell.label} className="density-card rounded-2xl border border-border bg-card p-5">
+          <div className="text-xs text-muted-foreground">{cell.label}</div>
+          <div className="mt-2 text-[34px] leading-10 font-semibold tracking-tight tabular-nums">
             {cell.value}
           </div>
         </div>
@@ -260,11 +253,15 @@ function AssetComposition({ data }: { data: BalanceSheetData }) {
     const nodes = sectionChildren(data.sections, 'assets').filter((node) =>
       visibleAccount(node.total, node.children),
     )
+    const classMap = loadClassMap()
     const values = nodes
-      .map((node, index) => ({
-        name: displayAccountName(node.account),
+      .map((node) => ({
+        name: (() => {
+          const shown = displayAccountName(node.account)
+          return shown === node.account ? (node.account.split(':').pop() ?? shown) : shown
+        })(),
         value: presentBalance('assets', node.total),
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: colorForCategory('assetClass:' + classOf(node, classMap)),
       }))
       .filter((row) => row.value > 0)
       .sort((a, b) => b.value - a.value)
@@ -279,7 +276,7 @@ function AssetComposition({ data }: { data: BalanceSheetData }) {
               {
                 name: t('balanceSheet.otherAssets'),
                 value: rest,
-                color: CHART_COLORS[CHART_COLORS.length - 1],
+                color: colorForCategory('assetClass:other'),
               },
             ]
           : top,
@@ -293,8 +290,8 @@ function AssetComposition({ data }: { data: BalanceSheetData }) {
 
   return (
     <section className="flex min-w-0 flex-col gap-2">
-      <h2 className="text-[0.8rem] font-medium">{t('balanceSheet.composition')}</h2>
-      <div className="rounded-lg border bg-card p-4">
+      <h2 className="text-sm font-semibold">{t('balanceSheet.composition')}</h2>
+      <div className="rounded-2xl border bg-card p-4">
         <div className="flex items-center gap-4">
           <svg viewBox="0 0 150 150" className="size-[132px] shrink-0">
             <g transform="rotate(-90 75 75)">

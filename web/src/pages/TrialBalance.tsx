@@ -274,8 +274,8 @@ function Statement({
                   : formatAccount(section.rootAccount)
                 return (
                   <section key={section.rootAccount} className="flex min-w-0 flex-col gap-2">
-                    <h2 className="text-[0.8rem] font-medium">{name}</h2>
-                    <div className="overflow-hidden rounded-lg border bg-card [&_td:last-child]:pe-4 [&_th:last-child]:pe-4">
+                    <h2 className="text-sm font-semibold">{name}</h2>
+                    <div className="overflow-hidden rounded-2xl border bg-card [&_td:last-child]:pe-4 [&_th:last-child]:pe-4">
                       <Table>
                         <TableHeader>
                           <TableRow>

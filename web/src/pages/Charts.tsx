@@ -41,7 +41,6 @@ import {
   categoryAxis,
   colorForCategory,
   expenseKey,
-  textOnFill,
   tooltipStyle,
   valueAxis,
 } from '@/lib/chart-theme'
@@ -107,7 +106,7 @@ function ChartFrame({
   className?: string
 }) {
   return (
-    <section className={cn('density-card rounded-lg border border-border bg-card p-4', className)}>
+    <section className={cn('density-card rounded-2xl border border-border bg-card p-5', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{title}</h2>
@@ -172,18 +171,17 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
   const { formatCurrency } = useI18n()
   const { format: formatAccount } = useAccountDisplay()
   const { isDark } = useTheme()
-  const data = visible(nodes).map((node) => {
+  const parents = visible(nodes)
+  const data = parents.map((node) => {
     const color = colorForCategory(expenseKey(node.name))
     return {
       name: formatAccount(node.name),
       value: Math.abs(node.total),
       itemStyle: { color },
-      label: { color: textOnFill(color) },
       children: visible(node.children).map((child) => ({
         name: formatAccount(child.name),
         value: Math.abs(child.total),
         itemStyle: { color },
-        label: { color: textOnFill(color) },
       })),
     }
   })
@@ -202,24 +200,17 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
           type: 'treemap',
           roam: false,
           breadcrumb: { show: false },
-          upperLabel: {
-            show: true,
-            height: 20,
-            fontSize: 11,
-            color: isDark ? '#f4f4f5' : '#3f3f46',
-            fontWeight: 500,
+          upperLabel: { show: false },
+          label: { show: false, overflow: 'truncate' },
+          itemStyle: {
+            color: 'transparent',
+            borderColor: isDark ? '#1f1f21' : '#ffffff',
+            borderWidth: 2,
+            gapWidth: 2,
           },
-          label: {
-            fontSize: 10,
-            color: '#ffffff',
-            overflow: 'truncate',
-            textShadowColor: 'rgba(0,0,0,0.45)',
-            textShadowBlur: 3,
-          },
-          itemStyle: { color: 'transparent', borderColor: 'transparent', borderWidth: 2, gapWidth: 2 },
           levels: [
-            { itemStyle: { borderColor: 'transparent', borderWidth: 2, gapWidth: 2 } },
-            { itemStyle: { borderColor: 'transparent', borderWidth: 1, gapWidth: 1 } },
+            { itemStyle: { borderColor: isDark ? '#1f1f21' : '#ffffff', borderWidth: 2, gapWidth: 2 } },
+            { itemStyle: { borderColor: isDark ? '#1f1f21' : '#ffffff', borderWidth: 2, gapWidth: 2 } },
           ],
           data,
         },
@@ -227,7 +218,25 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
     }),
     [data, currency, formatCurrency, isDark],
   )
-  return <Chart option={option} height={280} />
+  return (
+    <div>
+      <Chart option={option} height={250} />
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+        {parents.map((node) => {
+          const color = colorForCategory(expenseKey(node.name))
+          return (
+            <span
+              key={node.name}
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            >
+              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+              {formatAccount(node.name)}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export function Charts() {
@@ -536,7 +545,7 @@ export function Charts() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold">{t('charts.title')}</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">{t('charts.title')}</h1>
           <div className="mt-1 text-xs text-muted-foreground">
             {t('charts.filterPeriod')} ·{' '}
             {isAllTime ? t('time.allTime') : formatPeriodLabel(timeFilter, t)}
@@ -562,9 +571,9 @@ export function Charts() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpiItems.map((item) => (
-          <div key={item.label} className="density-card rounded-lg border border-border bg-card p-4">
-            <div className="text-[11px] text-muted-foreground">{item.label}</div>
-            <div className="mt-1.5 text-[26px] leading-8 font-semibold tracking-tight tabular-nums">
+          <div key={item.label} className="density-card rounded-2xl border border-border bg-card p-5">
+            <div className="text-xs text-muted-foreground">{item.label}</div>
+            <div className="mt-2 text-[34px] leading-10 font-semibold tracking-tight tabular-nums">
               {item.value ?? '—'}
             </div>
             {failed ? (
@@ -607,8 +616,8 @@ export function Charts() {
                     type="button"
                     onClick={() => setDim(key)}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs',
-                      dim === key ? 'border-primary text-foreground' : 'text-muted-foreground',
+                      'border-b-2 border-transparent px-1 pb-1 text-xs',
+                      dim === key ? 'border-primary text-primary' : 'text-muted-foreground hover:text-foreground',
                     )}
                   >
                     {t(

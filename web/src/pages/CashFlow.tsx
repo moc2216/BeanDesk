@@ -162,7 +162,7 @@ function Statement({
           const currentNet = compared ? compared.current : data.sections[section]
           return (
             <section key={section} className="flex min-w-0 flex-col gap-2">
-              <h2 className="text-[0.8rem] font-medium">{t(CASH_FLOW_SECTION_TITLE[section])}</h2>
+              <h2 className="text-sm font-semibold">{t(CASH_FLOW_SECTION_TITLE[section])}</h2>
               <ComparePanel>
                 <AmountTable
                   rows={rows}
@@ -186,7 +186,7 @@ function Statement({
 
       {unassignedRows.length > 0 ? (
         <section className="flex min-w-0 flex-col gap-2">
-          <h2 className="text-[0.8rem] font-medium">{t('cashFlow.unassigned')}</h2>
+          <h2 className="text-sm font-semibold">{t('cashFlow.unassigned')}</h2>
           <p className="text-[0.8rem] text-muted-foreground">{t('cashFlow.unassignedHint')}</p>
           <ComparePanel>
             <AmountTable

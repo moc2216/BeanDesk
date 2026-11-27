@@ -245,7 +245,7 @@ export function QueryPlayground() {
       {data ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[0.8rem] font-medium">{t('query.resultsTitle')}</h2>
+            <h2 className="text-sm font-semibold">{t('query.resultsTitle')}</h2>
             {sortCol != null ? (
               <Button variant="ghost" onClick={() => setSortCol(null)}>
                 <RotateCcwIcon data-icon="inline-start" />
@@ -264,7 +264,7 @@ export function QueryPlayground() {
           <div
             ref={windowRows.ref}
             onScroll={windowRows.onScroll}
-            className="max-h-[32rem] overflow-auto rounded-lg border bg-card"
+            className="max-h-[32rem] overflow-auto rounded-2xl border bg-card"
           >
             <table className="w-full caption-bottom text-[0.8rem]">
               <TableHeader className="sticky top-0 z-10 bg-card">
