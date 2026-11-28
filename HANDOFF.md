@@ -25,7 +25,7 @@
 ## 0.2 品牌与「关于」页（2026-11-28）
 
 - 图标：`src-tauri/icons/` 全套由「豆与账线」1024 主图生成（`bunx @tauri-apps/cli icon`），Dock、Finder、窗口与 favicon 统一为蓝底奶白豆 + 向上账线；`web/src/components/brand-mark.tsx` 为同一几何的应用内标记。
-- 托盘：`src-tauri/icons/tray.png` 由 `tray.svg` 渲染，72×72 黑色单色；`tray.rs` 必须保留 `.icon_as_template(true)`，否则深色菜单栏下图标不可见（已实测踩坑）。
+- 托盘：macOS 用 `src-tauri/icons/tray.png`（72×72 黑色单色），`tray.rs` 对它保留 `.icon_as_template(true)`，否则深色菜单栏下不可见；Windows 不支持 template，改用彩色 `src-tauri/icons/tray-windows.png`（蓝色豆 + 白缝，64×64），`icon_as_template(false)`，否则灰豆在灰色任务栏上不明显。
 - 「关于」页：删除原作者博客入口与 `AUTHOR_BLOG_URL`；改为「本项目核心特征 + 与 Beancount 的关系 + 打开手册查看致谢」，文案键 `settings.aboutBlurb/aboutBeancountTitle/aboutBeancount/aboutAttribution`（中英各一份）。
 - 手册：原始项目与致谢放在 `docs/content/docs/index.mdx` 与 `index.zh-CN.mdx` 首个 Callout（SuperDaniel-cn + `github.com/SuperDaniel-cn/BeanDesk` + AGPL-3.0），不要移回「关于」页。
 - 本机已替换 `/Applications/BeanDesk.app`（0.3.0，2026-11-28 12:32）；旧包在 `~/.Trash/BeanDesk-before-tray2-2026-11-28.app`。
@@ -37,7 +37,7 @@
 - 实现：Rust `UiZoom` 状态 + `set_ui_zoom` 命令，对全部 webview 调 `set_zoom`；手册窗口在 `on_page_load` 自动继承；前端 `web/src/lib/ui-zoom.ts` 负责持久化（`beancount-ui-zoom`）与界面状态，`UiZoomController` 监听菜单事件。
 - **权限坑**：新增命令必须同时写入 `src-tauri/build.rs` 的 `commands` 列表与 `capabilities/default.json` 的 `allow-set-ui-zoom`，否则 invoke 静默失败（表现为菜单能改百分比、界面不动）。
 - 设置 → 常规 → 显示大小 提供 −/+ 与重置；与「界面密度」独立叠加。
-- 已验证：原生菜单/快捷键改到 130%、250% 时导航折叠为汉堡菜单、70% 与 250% 可滚动；`cargo test` 153 项、`bun test` 193 项通过。
+- 已验证：原生菜单/快捷键改到 130%、250% 时导航折叠为汉堡菜单、70% 与 250% 可滚动；`cargo test` 153 项、`bun test` 196 项通过。
 
 ## 1. 快速启动
 
@@ -111,6 +111,17 @@ make docs-sync           # 手册导出到 web/public/docs
 ## 8. Windows（x64）
 
 - 代码已支持 Windows：进程树用 Job Object（`CREATE_SUSPENDED` 后加入作业再恢复），引擎/restic 按 `.exe` 解析，规则审核键统一盘符与 UNC 写法；
-- CI 新增 `windows` 作业：Web lint/test/build、Rust check/test、冻结引擎、`restic.exe`、NSIS 静默安装与安装目录内 `bean-check`/`restic version` 校验；
+- CI 新增 `windows` 作业：Web lint/test/build、Rust test、冻结引擎、`restic.exe`、NSIS 静默安装与安装目录内 `bean-check`/`restic version` 校验；
 - 改动清单、实机验证步骤与未验证项：`design-review/WINDOWS-PORT.md`；
 - **尚未实机验证**：托盘、单实例、窗口焦点、控制台是否闪烁、文件占用提示。发布前需在一台干净的 Windows x64 上按该文档第 2 节走一遍。
+
+## 9. 2026-11-29 暂停点
+
+- 分支：`ui/report-refine-2026-11-28`；HEAD `363a04c`；未合并 `main`。
+- 最新 Windows 安装包：`/Users/salt/Downloads/BeanDesk_0.3.0_x64-setup-363a04c.exe`；SHA-256 `609626c463cee03e913653654f4387d290e2e9dca4d3022af5c9aa567ec71496`；CI run `46161726605` 全绿。
+- Windows 回归测试数据：`/Users/salt/Desktop/BeanDesk-Windows-TestData.zip`；合成账本 2025-01 至 2026-11，CNY/USD/HKD、投资/房产/贷款/信用卡/税费；`bean-check` 与内置引擎均 0 错误。
+- Windows 修复：移除 Windows 原生菜单栏（File/Edit/View/Window/Help）；托盘改用彩色豆；`Ctrl +/-/0` 由前端快捷键处理。
+- 性能优化：报表页与 Settings 懒加载；ECharts 改为 `echarts/core` 按需注册（Charts chunk 1.15 MB → 664 KB）；拼音搜索改为聚焦搜索框时才加载（TrialBalance chunk 296 KB → 9.5 KB）；首屏脚本实测约 703 KB（原 2.29 MB）。
+- 启动日志：`[startup] bundle/shell/handbook`，从导航开始计时，写入控制台与 `BeanDesk.log`；等待实机采集后再决定是否继续优化。
+- 仍有：41 条 lint warning（0 error）、未签名安装包、依赖补丁未升级、Windows 实机托盘/单实例/焦点/备份恢复/卸载验收。
+- 恢复开发先读：本文件、`design-review/WINDOWS-PORT.md`、`DEVELOPMENT-OPTIMIZATION-PLAN.md`。
