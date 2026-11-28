@@ -34,10 +34,17 @@ pub(crate) fn install(
     let show_item = MenuItem::with_id(app, "show", show, true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", quit, true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+    // macOS wants a template image it can invert for either menu bar. Windows
+    // has no template concept and would paint the black shape as a dull grey
+    // bean on the taskbar, so use the full-colour app mark there.
+    let icon = if cfg!(target_os = "windows") {
+        include_image!("icons/tray-windows.png")
+    } else {
+        include_image!("icons/tray.png")
+    };
     TrayIconBuilder::with_id("beandesk")
-        .icon(include_image!("icons/tray.png"))
-        // A monochrome template lets macOS invert the bean for light and dark menu bars.
-        .icon_as_template(true)
+        .icon(icon)
+        .icon_as_template(!cfg!(target_os = "windows"))
         .tooltip(tray_tooltip(locales))
         .menu(&menu)
         .show_menu_on_left_click(false)
