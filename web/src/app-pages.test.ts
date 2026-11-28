@@ -4,6 +4,15 @@ import { REPORT_PAGES, navLabelKey } from '@/app-pages'
 import { en } from '@/i18n/locales/en'
 import { zhCN } from '@/i18n/locales/zh-CN'
 
+describe('report page manifest', () => {
+  test('keeps one component per unique route', () => {
+    const paths = REPORT_PAGES.map((page) => page.path)
+    expect(new Set(paths).size).toBe(paths.length)
+    expect(paths).toHaveLength(8)
+    for (const page of REPORT_PAGES) expect(typeof page.Page).toBe('function')
+  })
+})
+
 describe('nav labels', () => {
   test('Documents uses the same nav label and page title', () => {
     const documents = REPORT_PAGES.find((page) => page.path === '/documents')

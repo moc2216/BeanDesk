@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppShell } from '@/components/app-shell'
@@ -13,7 +14,9 @@ import { WarmMainWindow } from '@/components/warm-main-window'
 import { I18nProvider } from '@/i18n'
 import { AccountDisplayProvider } from '@/lib/account-display'
 import { TimeFilterProvider } from '@/lib/time-context'
-import { Settings } from '@/pages/Settings'
+const Settings = lazy(() =>
+  import('@/pages/Settings').then((m) => ({ default: m.Settings })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,7 +45,14 @@ export default function App() {
                     <DesktopGuard>
                       <KeptReports />
                       <Routes>
-                        <Route path="/settings" element={<Settings />} />
+                        <Route
+                          path="/settings"
+                          element={
+                            <Suspense fallback={<div className="h-64" aria-hidden />}>
+                              <Settings />
+                            </Suspense>
+                          }
+                        />
                       </Routes>
                     </DesktopGuard>
                   </AppShell>

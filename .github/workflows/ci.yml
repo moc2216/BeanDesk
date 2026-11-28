@@ -136,9 +136,7 @@ jobs:
       - name: check and test the desktop
         working-directory: src-tauri
         shell: bash
-        run: |
-          cargo check --locked
-          cargo test --locked
+        run: cargo test --locked
 
       - name: typecheck the frontend and build the Windows installer
         run: bunx @tauri-apps/cli@2.12.6 build --ci

@@ -1,15 +1,33 @@
 import { Archive, Banknote, BookOpen, ChartPie, FileSpreadsheet, Landmark, Scale, Terminal } from 'lucide-react'
 import type { ComponentType } from 'react'
 
+import { lazyPage } from '@/components/lazy-page'
 import type { MessageKey } from '@/i18n/locales/en'
-import { BalanceSheet } from '@/pages/BalanceSheet'
-import { CashFlow } from '@/pages/CashFlow'
-import { Charts } from '@/pages/Charts'
-import { Documents } from '@/pages/Documents'
-import { IncomeStatement } from '@/pages/IncomeStatement'
-import { Journal } from '@/pages/Journal'
-import { QueryPlayground } from '@/pages/QueryPlayground'
-import { TrialBalance } from '@/pages/TrialBalance'
+
+const TrialBalance = lazyPage(() =>
+  import('@/pages/TrialBalance').then((m) => ({ default: m.TrialBalance })),
+)
+const BalanceSheet = lazyPage(() =>
+  import('@/pages/BalanceSheet').then((m) => ({ default: m.BalanceSheet })),
+)
+const IncomeStatement = lazyPage(() =>
+  import('@/pages/IncomeStatement').then((m) => ({ default: m.IncomeStatement })),
+)
+const CashFlow = lazyPage(() =>
+  import('@/pages/CashFlow').then((m) => ({ default: m.CashFlow })),
+)
+const Charts = lazyPage(() =>
+  import('@/pages/Charts').then((m) => ({ default: m.Charts })),
+)
+const Journal = lazyPage(() =>
+  import('@/pages/Journal').then((m) => ({ default: m.Journal })),
+)
+const Documents = lazyPage(() =>
+  import('@/pages/Documents').then((m) => ({ default: m.Documents })),
+)
+const QueryPlayground = lazyPage(() =>
+  import('@/pages/QueryPlayground').then((m) => ({ default: m.QueryPlayground })),
+)
 
 export const REPORT_PAGES: Array<{
   path: string
