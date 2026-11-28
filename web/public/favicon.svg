@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <style>
-    path { fill: #000 }
-    @media (prefers-color-scheme: dark) { path { fill: #fff } }
-  </style>
-  <path fill-rule="evenodd" d="M16 1a15 15 0 1 0 0 30 15 15 0 1 0 0-30zm-8 8h16v3.2h-6.4V23h-3.2v-10.8H8z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0a6cf5"/>
+  <g transform="translate(2 2) scale(0.068) rotate(22 512 512)">
+    <path d="M 545 232 C 680 232 790 345 790 505 C 790 665 675 790 520 790 C 430 790 350 740 318 660 C 296 600 322 548 372 518 C 414 492 432 452 420 410 C 402 346 452 264 545 232 Z" fill="#fafaf8"/>
+    <path d="M 470 742 C 520 640 486 430 566 280" fill="none" stroke="#0757cb" stroke-width="26" stroke-linecap="round"/>
+  </g>
 </svg>

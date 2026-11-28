@@ -8,7 +8,6 @@ import {
   ChevronUp,
   Copy,
   Cpu,
-  ExternalLink,
   ArrowUpFromLine,
   FilePlus2,
   FolderInput,
@@ -24,6 +23,7 @@ import {
 import { UPDATES_ENABLED, useAppUpdate } from '@/components/app-update'
 import { BackupSettingsPanel } from '@/components/backup-settings'
 import { BrandMark } from '@/components/brand-mark'
+import { useTheme } from '@/components/theme-provider'
 import { formatConnectionLog, formatConnectionLogLine, useDesktop } from '@/components/desktop-gate'
 import { LedgerErrors } from '@/components/ledger-errors'
 import { LocaleToggle } from '@/components/locale-toggle'
@@ -65,6 +65,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useI18n } from '@/i18n'
+import { openHandbookWindow } from '@/lib/handbook-window'
 import {
   activeConnection,
   connectionStepKey,
@@ -233,10 +234,9 @@ export function Settings() {
   )
 }
 
-const AUTHOR_BLOG_URL = 'https://superdaniel.cn/'
-
 function AboutSettings({ tauri }: { tauri: boolean }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const { isDark } = useTheme()
   const [version, setVersion] = useState<string | null>(null)
 
   useEffect(() => {
@@ -265,25 +265,19 @@ function AboutSettings({ tauri }: { tauri: boolean }) {
       </div>
       <Separator />
       <div className="flex flex-col items-start gap-1.5">
-        <span className={formTitleClass}>{t('settings.aboutAuthor')}</span>
-        <div className="flex items-center gap-2 text-[0.8rem]">
-          <span className="text-muted-foreground">{t('settings.aboutAuthorBlog')}</span>
-          <a
-            href={AUTHOR_BLOG_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              if (tauri) {
-                e.preventDefault()
-                void invoke('open_url', { url: AUTHOR_BLOG_URL })
-              }
-            }}
-            className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary/80"
-          >
-            <span>{AUTHOR_BLOG_URL}</span>
-            <ExternalLink className="size-3" />
-          </a>
-        </div>
+        <span className={formTitleClass}>{t('settings.aboutBeancountTitle')}</span>
+        <p className="text-[0.8rem] text-muted-foreground">{t('settings.aboutBeancount')}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void openHandbookWindow(t('handbook.title'), locale, isDark ? 'dark' : 'light').catch(
+              () => undefined,
+            )
+          }}
+          className="text-left text-[0.8rem] text-primary underline-offset-4 hover:underline"
+        >
+          {t('settings.aboutAttribution')}
+        </button>
       </div>
       <Separator />
       <div className="flex flex-col items-start gap-1.5">

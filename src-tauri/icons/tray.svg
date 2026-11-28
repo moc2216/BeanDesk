@@ -1,4 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
-  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="#fff"/>
-  <path fill="#000" transform="translate(100 100) scale(25.75)" d="M8 9h16v3.2h-6.4V23h-3.2v-10.8H8z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <defs>
+    <mask id="bean">
+      <path d="M 545 232
+               C 680 232 790 345 790 505
+               C 790 665 675 790 520 790
+               C 430 790 350 740 318 660
+               C 296 600 322 548 372 518
+               C 414 492 432 452 420 410
+               C 402 346 452 264 545 232 Z"
+            fill="white" transform="translate(-25 -20.5) scale(0.11) rotate(22 512 512)"/>
+      <path d="M 470 742 C 556 664 438 398 566 280"
+            fill="none" stroke="black" stroke-width="22" stroke-linecap="round"
+            transform="translate(-25 -20.5) scale(0.11) rotate(22 512 512)"/>
+    </mask>
+  </defs>
+  <rect width="72" height="72" fill="black" mask="url(#bean)"/>
 </svg>

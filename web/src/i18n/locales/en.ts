@@ -384,9 +384,12 @@ export const en = {
     densityHint: 'Compact tightens table rows and card padding so more rows fit on screen.',
     densityComfortable: 'Comfortable',
     densityCompact: 'Compact',
-    aboutBlurb: 'Directly connects to a local Fava instance with zero cloud dependencies.',
-    aboutAuthor: 'Author',
-    aboutAuthorBlog: 'Blog',
+    aboutBlurb:
+      'A local-first double-entry workbench for Beancount plain-text ledgers: reports, charts, journal, backups and MCP, with every ledger file kept on your machine.',
+    aboutBeancountTitle: 'Beancount',
+    aboutBeancount:
+      'The ledger stays plain-text Beancount: versionable, portable and readable without this app. BeanDesk reads it locally and never uploads it.',
+    aboutAttribution: 'Original project and attribution: open the handbook overview.',
     aboutLicense: 'License',
     aboutLicenseName: 'GNU AGPLv3',
     calendarNoticeTitle: 'Upcoming Due Date',

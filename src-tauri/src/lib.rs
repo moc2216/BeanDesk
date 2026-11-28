@@ -621,6 +621,6 @@ mod tests {
         assert!(!http_url_allowed("https://example.com/\ncmd"));
         assert!(!http_url_allowed("https://example.com/\"&calc.exe"));
         assert!(http_url_allowed("https://example.com/path?a=1&b=2"));
-        assert!(http_url_allowed("https://superdaniel.cn/"));
+        assert!(http_url_allowed("https://example.com/path#section"));
     }
 }

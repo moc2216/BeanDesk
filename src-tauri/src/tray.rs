@@ -36,6 +36,8 @@ pub(crate) fn install(
     let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
     TrayIconBuilder::with_id("beandesk")
         .icon(include_image!("icons/tray.png"))
+        // A monochrome template lets macOS invert the bean for light and dark menu bars.
+        .icon_as_template(true)
         .tooltip(tray_tooltip(locales))
         .menu(&menu)
         .show_menu_on_left_click(false)

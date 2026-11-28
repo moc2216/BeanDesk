@@ -386,9 +386,12 @@ export const zhCN = {
     densityHint: '紧凑模式会收紧表格行高与卡片内边距，一屏显示更多行。',
     densityComfortable: '舒适',
     densityCompact: '紧凑',
-    aboutBlurb: '直连本地 Fava 服务，数据完全保留在本地，无需注册云端账号。',
-    aboutAuthor: '关于作者',
-    aboutAuthorBlog: '个人博客',
+    aboutBlurb:
+      '面向 Beancount 纯文本账本的本地优先复式记账工作台：报表、图表、日记账、备份与 MCP，账本和凭证始终留在本机。',
+    aboutBeancountTitle: 'Beancount',
+    aboutBeancount:
+      '账本保持 Beancount 纯文本格式：可版本管理、可迁移，离开本应用也能读；BeanDesk 只在本地读取和展示，不上传账本。',
+    aboutAttribution: '原始项目与致谢：打开手册首页查看。',
     aboutLicense: '许可证',
     aboutLicenseName: 'GNU AGPLv3',
     calendarNoticeTitle: '即将到期',
