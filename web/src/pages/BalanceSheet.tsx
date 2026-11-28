@@ -40,7 +40,7 @@ import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
 import { displayAccountName, presentBalance, presentIncome } from '@/lib/format'
-import { CHART_COLORS, colorForCategory } from '@/lib/chart-theme'
+import { CHART_COLORS, colorForCategory, liabilityColor } from '@/lib/chart-theme'
 import { classOf, loadClassMap } from '@/lib/asset-classes'
 import { CASH_FLOW_SECTIONS, CASH_FLOW_SECTION_TITLE } from '@/lib/cash-flow'
 import { priorPeriod, visibleAccount } from '@/lib/ledger-model'
@@ -456,6 +456,114 @@ function AssetComposition({ data }: { data: BalanceSheetData }) {
   )
 }
 
+function LiabilityComposition({ data }: { data: BalanceSheetData }) {
+  const { t } = useI18n()
+  const rows = useMemo(() => {
+    const nodes = sectionChildren(data.sections, 'liabilities').filter((node) =>
+      visibleAccount(node.total, node.children),
+    )
+    const values = nodes
+      .map((node) => ({
+        name: (() => {
+          const shown = displayAccountName(node.account)
+          return shown === node.account ? (node.account.split(':').pop() ?? shown) : shown
+        })(),
+        value: presentBalance('liabilities', node.total),
+        color: liabilityColor(node.account),
+      }))
+      .filter((row) => row.value > 0)
+      .sort((a, b) => b.value - a.value)
+    const total = values.reduce((sum, row) => sum + row.value, 0)
+    const top = values.slice(0, 6)
+    const rest = values.slice(6).reduce((sum, row) => sum + row.value, 0)
+    return {
+      items:
+        rest > 0
+          ? [
+              ...top,
+              {
+                name: t('balanceSheet.otherLiabilities'),
+                value: rest,
+                color: '#8b939f',
+              },
+            ]
+          : top,
+      total,
+    }
+  }, [data.sections, t])
+
+  if (rows.total <= 0) return null
+
+  const radius = 54
+  const circumference = 2 * Math.PI * radius
+  let offset = 0
+
+  return (
+    <section className="flex min-w-0 flex-col gap-2">
+      <h2 className="text-sm font-semibold">{t('balanceSheet.liabilityComposition')}</h2>
+      <div className="rounded-2xl border bg-card p-4">
+        <div className="flex items-center gap-4">
+          <svg viewBox="0 0 150 150" className="size-[132px] shrink-0">
+            <g transform="rotate(-90 75 75)">
+              {rows.items.map((item) => {
+                const length = rows.total > 0 ? (item.value / rows.total) * circumference : 0
+                const dash = Math.max(length - 1.5, 0) + ' ' + circumference
+                const dashOffset = -offset
+                offset += length
+                return (
+                  <circle
+                    key={item.name}
+                    cx="75"
+                    cy="75"
+                    r={radius}
+                    fill="none"
+                    stroke={item.color}
+                    strokeWidth="16"
+                    strokeDasharray={dash}
+                    strokeDashoffset={dashOffset}
+                  />
+                )
+              })}
+            </g>
+            <text
+              x="75"
+              y="73"
+              textAnchor="middle"
+              className="fill-foreground text-[13px] font-semibold tabular-nums"
+            >
+              {data.operating_currency === 'CNY'
+                ? (rows.total / 10000).toFixed(1) + '万'
+                : (rows.total / 1000).toFixed(1) + 'k'}
+            </text>
+            <text
+              x="75"
+              y="88"
+              textAnchor="middle"
+              className="fill-muted-foreground text-[9px]"
+            >
+              {t('balanceSheet.totalLiabilities')}
+            </text>
+          </svg>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {rows.items.map((item) => (
+              <div key={item.name} className="flex items-center gap-2 text-[11px]">
+                <span
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{ background: item.color }}
+                />
+                <span className="truncate text-muted-foreground">{item.name}</span>
+                <span className="ml-auto tabular-nums">
+                  {((item.value / rows.total) * 100).toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function AccountForm({
   data,
   movements,
@@ -773,6 +881,7 @@ export function BalanceSheet() {
             <AccountForm data={data} movements={movementQuery.data} />
             <div className="flex min-w-0 flex-col gap-4">
               <AssetComposition data={data} />
+              <LiabilityComposition data={data} />
               <CashFlowMini time={timeFilter} currency={data.operating_currency} />
               <PeriodStats time={timeFilter} currency={data.operating_currency} />
             </div>

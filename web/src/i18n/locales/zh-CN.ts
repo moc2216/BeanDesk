@@ -142,6 +142,8 @@ export const zhCN = {
     debtRatio: '资产负债率',
     compare: '对比',
     composition: '资产构成',
+    liabilityComposition: '负债构成',
+    otherLiabilities: '其他负债',
     cashFlow: '现金流',
     periodStats: '本期概览',
     otherAssets: '其他资产',

@@ -58,6 +58,15 @@ export function colorForCategory(key: string | undefined): string {
   return (key && CATEGORY_COLORS[key]) || '#64748b'
 }
 
+/** Liabilities do not have asset classes; map common account families. */
+export function liabilityColor(account: string): string {
+  const name = account.toLowerCase()
+  if (/credit|card|信用卡/.test(name)) return '#8b939f'
+  if (/mortgage|房贷|按揭/.test(name)) return '#a975e0'
+  if (/loan|借款|贷款|消费贷/.test(name)) return '#cc68b9'
+  return '#8b939f'
+}
+
 const EXPENSE_ALIASES: Array<[RegExp, string]> = [
   [/housing|rent|居住|房租/i, 'housing'],
   [/social|社保|保险/i, 'socialSecurity'],

@@ -138,6 +138,8 @@ export const en = {
     debtRatio: 'Debt Ratio',
     compare: 'Compare',
     composition: 'Asset Mix',
+    liabilityComposition: 'Liability Mix',
+    otherLiabilities: 'Other Liabilities',
     cashFlow: 'Cash Flow',
     periodStats: 'This Period',
     otherAssets: 'Other Assets',
