@@ -9,6 +9,19 @@
 
 - 远程：`moc2216/BeanDesk`（私有，待转公开）；`origin` 指向它，`upstream` 指向上游。
 
+## 0.1 版本快照与回滚（2026-11-28）
+
+- 标签：snapshot/design-2026-11-28（附注标签，指向本文件所在提交）；
+- 内容：暖白画布 #FAFAF8、高彩度等明度数据色、报表摘要带 + 右栏、12px 圆角、
+  树图图例、ADR 0007；CI 的 web/docs/rust/windows 全部通过；
+- 回滚到该版本：
+  git fetch --tags
+  git checkout snapshot/design-2026-11-28
+  或丢弃当前改动：
+  git reset --hard snapshot/design-2026-11-28
+- 桌面包：src-tauri/target/release/bundle/macos/BeanDesk.app（2026-11-28 10:02 构建）；
+- 该标签用于回滚，不要移动或复用；后续重要节点另打新标签。
+
 ## 1. 快速启动
 
 ```bash
@@ -78,7 +91,7 @@ make docs-sync           # 手册导出到 web/public/docs
 - [ ] 上游 remote 与合并策略明确；
 - [ ] 新增决策写入 `docs/decisions/`，不要只留在聊天里。
 
-## 7. Windows（x64）
+## 8. Windows（x64）
 
 - 代码已支持 Windows：进程树用 Job Object（`CREATE_SUSPENDED` 后加入作业再恢复），引擎/restic 按 `.exe` 解析，规则审核键统一盘符与 UNC 写法；
 - CI 新增 `windows` 作业：Web lint/test/build、Rust check/test、冻结引擎、`restic.exe`、NSIS 静默安装与安装目录内 `bean-check`/`restic version` 校验；
