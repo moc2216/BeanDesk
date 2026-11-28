@@ -133,6 +133,33 @@ export async function fetchCashFlow(time?: string, signal?: AbortSignal) {
   })
 }
 
+export type AccountMovement = { debit: number; credit: number }
+
+/** Signed postings in the period, split into debit and credit per account. */
+export async function fetchBalanceMovements(
+  time: string | undefined,
+  currency: string,
+  signal?: AbortSignal,
+): Promise<Map<string, AccountMovement>> {
+  const code = quoteCommodity(currency)
+  const result = await favaClient.query(
+    `SELECT account, convert(position, "${code}")`,
+    time,
+    signal,
+  )
+  const movements = new Map<string, AccountMovement>()
+  for (const row of result.rows ?? []) {
+    const account = String(row[0] ?? '')
+    if (!account) continue
+    const amount = readInventory(row[1], currency).amount
+    const entry = movements.get(account) ?? { debit: 0, credit: 0 }
+    if (amount >= 0) entry.debit += amount
+    else entry.credit += -amount
+    movements.set(account, entry)
+  }
+  return movements
+}
+
 function postingFromRow(row: unknown[], currency: string): CashPosting | null {
   const [id, flag, account, amount] = row
   if (typeof account !== 'string' || !account) return null

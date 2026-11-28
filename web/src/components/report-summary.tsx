@@ -4,32 +4,41 @@ export type SummaryCell = {
   label: string
   value: string
   tone?: 'positive' | 'negative'
+  note?: string
+  noteTone?: 'positive' | 'negative'
 }
 
-/** Report header strip: one surface, hairline dividers, tabular figures. */
+/** Report KPI cards: same scale and radius as the Charts page. */
 export function ReportSummary({ cells }: { cells: SummaryCell[] }) {
   return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-4">
-      {cells.map((cell, index) => (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {cells.map((cell) => (
         <div
           key={cell.label}
-          className={cn(
-            'px-5 py-4',
-            index > 0 && 'border-l border-border',
-            index === 2 && 'max-lg:border-t max-lg:border-l-0',
-            index === 3 && 'max-lg:border-t',
-          )}
+          className="density-card rounded-2xl border border-border bg-card p-5"
         >
-          <div className="text-[11px] text-muted-foreground">{cell.label}</div>
+          <div className="text-xs text-muted-foreground">{cell.label}</div>
           <div
             className={cn(
-              'mt-1 text-[20px] font-semibold tracking-tight tabular-nums',
+              'mt-2 text-[34px] leading-10 font-semibold tracking-tight tabular-nums',
               cell.tone === 'positive' && 'text-positive',
               cell.tone === 'negative' && 'text-destructive',
             )}
           >
             {cell.value}
           </div>
+          {cell.note ? (
+            <div
+              className={cn(
+                'mt-1 text-[11px] tabular-nums',
+                cell.noteTone === 'positive' && 'text-positive',
+                cell.noteTone === 'negative' && 'text-destructive',
+                !cell.noteTone && 'text-muted-foreground',
+              )}
+            >
+              {cell.note}
+            </div>
+          ) : null}
         </div>
       ))}
     </div>

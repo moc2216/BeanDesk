@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
 import { ReportBar, ReportDay, ReportWhen } from '@/components/report-bar'
+import { ReportSummary } from '@/components/report-summary'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,9 @@ import { useTimeFilter } from '@/lib/time-context'
 import {
   fetchBalanceSheet,
   fetchCashFlow,
+  fetchBalanceMovements,
+  fetchIncomeStatement,
+  type AccountMovement,
   type AccountNode,
   type BalanceSheet as BalanceSheetData,
   type BalanceSheetSection,
@@ -35,11 +39,11 @@ import {
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
-import { displayAccountName, presentBalance } from '@/lib/format'
+import { displayAccountName, presentBalance, presentIncome } from '@/lib/format'
 import { CHART_COLORS, colorForCategory } from '@/lib/chart-theme'
 import { classOf, loadClassMap } from '@/lib/asset-classes'
 import { CASH_FLOW_SECTIONS, CASH_FLOW_SECTION_TITLE } from '@/lib/cash-flow'
-import { visibleAccount } from '@/lib/ledger-model'
+import { priorPeriod, visibleAccount } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
 import { balanceCsvTable } from '@/lib/statement-csv'
@@ -96,7 +100,26 @@ function accountTitle(
 ): string {
   if (node.label_key) return t('balanceSheet.unclosedEarnings')
   if (node.name === 'Earnings') return t('balanceSheet.earnings')
+  if (node.name === 'Opening-Balances') return t('balanceSheet.openingBalances')
+  if (node.name === 'Previous') return t('balanceSheet.previous')
   return formatAccount(node.name)
+}
+
+function movementFor(
+  movements: Map<string, AccountMovement> | undefined,
+  account: string,
+): AccountMovement {
+  let debit = 0
+  let credit = 0
+  if (movements) {
+    for (const [key, value] of movements) {
+      if (key === account || key.startsWith(account + ':')) {
+        debit += value.debit
+        credit += value.credit
+      }
+    }
+  }
+  return { debit, credit }
 }
 
 function LineRow({
@@ -104,16 +127,26 @@ function LineRow({
   section,
   currency,
   onToggle,
+  movements,
+  sectionTotal,
 }: {
   line: AccountLine
   section: StatementSection
   currency: string
   onToggle: (account: string) => void
+  movements?: Map<string, AccountMovement>
+  sectionTotal: number
 }) {
   const { t, formatCurrency } = useI18n()
   const { format: formatAccount } = useAccountDisplay()
   const value = presentBalance(section, line.node.total)
   const title = accountTitle(line.node, t, formatAccount)
+  const movement = movementFor(movements, line.node.account)
+  const increase = section === 'assets' ? movement.debit : movement.credit
+  const decrease = section === 'assets' ? movement.credit : movement.debit
+  const hasMovement = movement.debit !== 0 || movement.credit !== 0
+  const opening = hasMovement ? value - (increase - decrease) : null
+  const share = sectionTotal > 0 ? (value / sectionTotal) * 100 : null
 
   return (
     <TableRow>
@@ -154,8 +187,20 @@ function LineRow({
           </span>
         </span>
       </TableCell>
-      <TableCell className="w-32 text-right tabular-nums">
+      <TableCell className="w-28 text-right tabular-nums">
+        {opening === null ? '—' : formatCurrency(opening, currency)}
+      </TableCell>
+      <TableCell className="w-28 text-right tabular-nums">
+        {hasMovement ? formatCurrency(increase, currency) : '—'}
+      </TableCell>
+      <TableCell className="w-28 text-right tabular-nums">
+        {hasMovement ? formatCurrency(decrease, currency) : '—'}
+      </TableCell>
+      <TableCell className="w-28 text-right tabular-nums">
         {formatCurrency(value, currency)}
+      </TableCell>
+      <TableCell className="w-16 text-right tabular-nums">
+        {share === null ? '—' : share.toFixed(1) + '%'}
       </TableCell>
     </TableRow>
   )
@@ -178,6 +223,8 @@ function AccountSection({
   onToggle,
   totalLabel,
   total,
+  movements,
+  sectionTotal,
 }: {
   title: string
   section: StatementSection
@@ -186,6 +233,8 @@ function AccountSection({
   onToggle: (account: string) => void
   totalLabel?: string
   total?: string
+  movements?: Map<string, AccountMovement>
+  sectionTotal: number
 }) {
   const { t } = useI18n()
 
@@ -197,7 +246,11 @@ function AccountSection({
           <TableHeader>
             <TableRow>
               <TableHead>{t('balanceSheet.account')}</TableHead>
-              <TableHead className="w-32 text-right">{t('balanceSheet.amount')}</TableHead>
+              <TableHead className="w-28 text-right">{t('balanceSheet.opening')}</TableHead>
+              <TableHead className="w-28 text-right">{t('balanceSheet.increase')}</TableHead>
+              <TableHead className="w-28 text-right">{t('balanceSheet.decrease')}</TableHead>
+              <TableHead className="w-28 text-right">{t('balanceSheet.closing')}</TableHead>
+              <TableHead className="w-16 text-right">{t('balanceSheet.share')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -208,6 +261,8 @@ function AccountSection({
                 section={section}
                 currency={currency}
                 onToggle={onToggle}
+                movements={movements}
+                sectionTotal={sectionTotal}
               />
             ))}
           </TableBody>
@@ -218,43 +273,78 @@ function AccountSection({
   )
 }
 
-function OverviewStrip({ data }: { data: BalanceSheetData }) {
+function OverviewStrip({
+  data,
+  prior,
+  comparing,
+}: {
+  data: BalanceSheetData
+  prior?: BalanceSheetData
+  comparing: boolean
+}) {
   const { t, formatCurrency } = useI18n()
   const currency = data.operating_currency
   const assets = presentBalance('assets', data.totals.assets)
   const liabilities = presentBalance('liabilities', data.totals.liabilities)
   const net = assets - liabilities
   const ratio = assets > 0 ? (liabilities / assets) * 100 : null
+  const priorAssets = prior ? presentBalance('assets', prior.totals.assets) : undefined
+  const priorLiabilities = prior
+    ? presentBalance('liabilities', prior.totals.liabilities)
+    : undefined
+  const priorNet =
+    priorAssets !== undefined && priorLiabilities !== undefined
+      ? priorAssets - priorLiabilities
+      : undefined
+  const priorRatio =
+    priorAssets !== undefined && priorAssets > 0 && priorLiabilities !== undefined
+      ? (priorLiabilities / priorAssets) * 100
+      : null
+  const pct = (current: number, previous?: number) =>
+    previous !== undefined && Math.abs(previous) > 0
+      ? ((current - previous) / Math.abs(previous)) * 100
+      : null
+  const signedPct = (value: number) =>
+    `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}%`
+  const signedPp = (value: number) =>
+    `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}pp`
+  const assetPct = pct(assets, priorAssets)
+  const liabilityPct = pct(liabilities, priorLiabilities)
+  const netPct = pct(net, priorNet)
+  const ratioDelta = ratio !== null && priorRatio !== null ? ratio - priorRatio : null
+  const tone = (value: number | null, goodWhenPositive: boolean) => {
+    if (!comparing || value === null) return undefined
+    const good = goodWhenPositive ? value >= 0 : value <= 0
+    return good ? ('positive' as const) : ('negative' as const)
+  }
   const cells = [
-    { label: t('balanceSheet.totalAssets'), value: formatCurrency(assets, currency) },
-    { label: t('balanceSheet.totalLiabilities'), value: formatCurrency(liabilities, currency) },
-    { label: t('charts.netWorth'), value: formatCurrency(net, currency) },
+    {
+      label: t('balanceSheet.totalAssets'),
+      value: formatCurrency(assets, currency),
+      note: comparing && assetPct !== null ? signedPct(assetPct) : undefined,
+      noteTone: tone(assetPct, true),
+    },
+    {
+      label: t('balanceSheet.totalLiabilities'),
+      value: formatCurrency(liabilities, currency),
+      note: comparing && liabilityPct !== null ? signedPct(liabilityPct) : undefined,
+      noteTone: tone(liabilityPct, false),
+    },
+    {
+      label: t('charts.netWorth'),
+      value: formatCurrency(net, currency),
+      note: comparing && netPct !== null ? signedPct(netPct) : undefined,
+      noteTone: tone(netPct, true),
+    },
     {
       label: t('balanceSheet.debtRatio'),
       value: ratio === null ? '—' : ratio.toFixed(1) + '%',
+      note: comparing && ratioDelta !== null ? signedPp(ratioDelta) : undefined,
+      noteTone: tone(ratioDelta, false),
     },
   ]
 
-  return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-4">
-      {cells.map((cell, index) => (
-        <div
-          key={cell.label}
-          className={cn(
-            'px-5 py-4',
-            index > 0 && 'border-l border-border',
-            index === 2 && 'max-lg:border-t max-lg:border-l-0',
-            index === 3 && 'max-lg:border-t',
-          )}
-        >
-          <div className="text-[11px] text-muted-foreground">{cell.label}</div>
-          <div className="mt-1 text-[20px] font-semibold tracking-tight tabular-nums">
-            {cell.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
+  return <ReportSummary cells={cells} />
 }
 
 function AssetComposition({ data }: { data: BalanceSheetData }) {
@@ -366,7 +456,13 @@ function AssetComposition({ data }: { data: BalanceSheetData }) {
   )
 }
 
-function AccountForm({ data }: { data: BalanceSheetData }) {
+function AccountForm({
+  data,
+  movements,
+}: {
+  data: BalanceSheetData
+  movements?: Map<string, AccountMovement>
+}) {
   const { t, formatCurrency } = useI18n()
   const currency = data.operating_currency
   const [expanded, setExpanded] = useState<Set<string>>(() => defaultExpanded(data.sections))
@@ -403,37 +499,40 @@ function AccountForm({ data }: { data: BalanceSheetData }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-        <AccountSection
-          title={t('balanceSheet.assets')}
-          section="assets"
-          lines={assetLines}
-          currency={currency}
-          onToggle={toggle}
-        />
-        <div className="flex min-w-0 flex-col gap-6">
-          <AccountSection
-            title={t('balanceSheet.liabilities')}
-            section="liabilities"
-            lines={liabilityLines}
-            currency={currency}
-            onToggle={toggle}
-            totalLabel={t('balanceSheet.totalLiabilities')}
-            total={liabilityTotal}
-          />
-          <AccountSection
-            title={t('balanceSheet.equity')}
-            section="equity"
-            lines={equityLines}
-            currency={currency}
-            onToggle={toggle}
-            totalLabel={t('balanceSheet.totalEquity')}
-            total={equityTotal}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-6">
-        <TotalLine label={t('balanceSheet.totalAssets')} amount={assetTotal} />
+      <AccountSection
+        title={t('balanceSheet.assets')}
+        section="assets"
+        lines={assetLines}
+        currency={currency}
+        onToggle={toggle}
+        movements={movements}
+        sectionTotal={assetAmount}
+        totalLabel={t('balanceSheet.totalAssets')}
+        total={assetTotal}
+      />
+      <AccountSection
+        title={t('balanceSheet.liabilities')}
+        section="liabilities"
+        lines={liabilityLines}
+        currency={currency}
+        onToggle={toggle}
+        totalLabel={t('balanceSheet.totalLiabilities')}
+        total={liabilityTotal}
+        movements={movements}
+        sectionTotal={liabilityAmount}
+      />
+      <AccountSection
+        title={t('balanceSheet.equity')}
+        section="equity"
+        lines={equityLines}
+        currency={currency}
+        onToggle={toggle}
+        totalLabel={t('balanceSheet.totalEquity')}
+        total={equityTotal}
+        movements={movements}
+        sectionTotal={equityAmount}
+      />
+      <div className="flex flex-col gap-2">
         <TotalLine label={t('balanceSheet.totalLiabilitiesAndEquity')} amount={liabilitiesAndEquity} />
       </div>
     </div>
@@ -504,12 +603,61 @@ function CashFlowMini({ time, currency }: { time: string; currency: string }) {
   )
 }
 
+function PeriodStats({ time, currency }: { time: string; currency: string }) {
+  const { t, formatCurrency } = useI18n()
+  const query = useQuery({
+    queryKey: ['balance-income', time],
+    queryFn: ({ signal }) => fetchIncomeStatement(time || undefined, signal),
+    placeholderData: (previous) => previous,
+  })
+  const data = query.data
+  if (!data) return null
+  const income = data.sections.find((section) => section.section === 'income')?.total ?? 0
+  const expenses = data.sections.find((section) => section.section === 'expenses')?.total ?? 0
+  const revenue = presentIncome('income', income)
+  const spend = presentIncome('expenses', expenses)
+  const rate = revenue > 0 ? ((revenue - spend) / revenue) * 100 : null
+  const rows = [
+    { label: t('income.totalRevenue'), value: formatCurrency(revenue, currency) },
+    { label: t('income.totalExpenses'), value: formatCurrency(spend, currency) },
+    { label: t('charts.savingsRate'), value: rate === null ? '—' : rate.toFixed(1) + '%' },
+  ]
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4">
+      <h2 className="text-sm font-semibold">{t('balanceSheet.periodStats')}</h2>
+      <div className="mt-3 flex flex-col gap-2">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-baseline justify-between gap-3 text-[11px]">
+            <span className="text-muted-foreground">{row.label}</span>
+            <span className="tabular-nums">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function BalanceSheet() {
   const { t, formatDate, formatCurrency } = useI18n()
   const { timeFilter } = useTimeFilter()
   const query = useQuery({
     queryKey: ['balance-sheet', timeFilter],
     queryFn: ({ signal }) => fetchBalanceSheet(timeFilter, signal),
+    placeholderData: (previous) => previous,
+  })
+  const movementQuery = useQuery({
+    queryKey: ['balance-movements', timeFilter, query.data?.operating_currency],
+    queryFn: ({ signal }) =>
+      fetchBalanceMovements(timeFilter, query.data!.operating_currency, signal),
+    enabled: !!query.data,
+    placeholderData: (previous) => previous,
+  })
+  const [compare, setCompare] = useState(false)
+  const priorKey = priorPeriod(timeFilter)
+  const priorQuery = useQuery({
+    queryKey: ['balance-sheet-prior', priorKey],
+    queryFn: ({ signal }) => fetchBalanceSheet(priorKey as string, signal),
+    enabled: compare && priorKey != null,
     placeholderData: (previous) => previous,
   })
   const shownTime = useShownTime(timeFilter, query.isPlaceholderData)
@@ -561,6 +709,14 @@ export function BalanceSheet() {
         }
         actions={
           <>
+            {priorKey ? (
+              <Button
+                variant={compare ? 'secondary' : 'outline'}
+                onClick={() => setCompare((value) => !value)}
+              >
+                {t('balanceSheet.compare')}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               disabled={!canExport}
@@ -612,12 +768,13 @@ export function BalanceSheet() {
         </Empty>
       ) : (
         <div className="flex flex-col gap-4">
-          <OverviewStrip data={data} />
+          <OverviewStrip data={data} prior={priorQuery.data} comparing={compare} />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <AccountForm data={data} />
+            <AccountForm data={data} movements={movementQuery.data} />
             <div className="flex min-w-0 flex-col gap-4">
               <AssetComposition data={data} />
               <CashFlowMini time={timeFilter} currency={data.operating_currency} />
+              <PeriodStats time={timeFilter} currency={data.operating_currency} />
             </div>
           </div>
         </div>
