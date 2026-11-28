@@ -5,7 +5,7 @@
 
 ## 0. 一句话状态
 
-基于原作者 BeanDesk（AGPL-3.0）的二次扩展，已完成设计体系、会计期间、图表可读性、金额精度、密度、无障碍与开源说明；版本 `0.3.0`；已关闭自动更新（无 endpoint、无签名）；`identifier` 保留 `app.beandesk.desktop`。当前分支 `main`，最新提交见 `git log -1`。
+基于原作者 BeanDesk（AGPL-3.0）的二次扩展，已完成设计体系、会计期间、图表可读性、金额精度、密度、无障碍、品牌图标与开源说明；版本 `0.3.0`；已关闭自动更新（无 endpoint、无签名）；`identifier` 保留 `app.beandesk.desktop`。当前开发分支 `ui/report-refine-2026-11-28`，`main` 未合并；最新提交见 `git log -1`。
 
 - 远程：`moc2216/BeanDesk`（私有，待转公开）；`origin` 指向它，`upstream` 指向上游。
 
@@ -21,6 +21,15 @@
   git reset --hard snapshot/design-2026-11-28
 - 桌面包：src-tauri/target/release/bundle/macos/BeanDesk.app（2026-11-28 10:02 构建）；
 - 该标签用于回滚，不要移动或复用；后续重要节点另打新标签。
+
+## 0.2 品牌与「关于」页（2026-11-28）
+
+- 图标：`src-tauri/icons/` 全套由「豆与账线」1024 主图生成（`bunx @tauri-apps/cli icon`），Dock、Finder、窗口与 favicon 统一为蓝底奶白豆 + 向上账线；`web/src/components/brand-mark.tsx` 为同一几何的应用内标记。
+- 托盘：`src-tauri/icons/tray.png` 由 `tray.svg` 渲染，72×72 黑色单色；`tray.rs` 必须保留 `.icon_as_template(true)`，否则深色菜单栏下图标不可见（已实测踩坑）。
+- 「关于」页：删除原作者博客入口与 `AUTHOR_BLOG_URL`；改为「本项目核心特征 + 与 Beancount 的关系 + 打开手册查看致谢」，文案键 `settings.aboutBlurb/aboutBeancountTitle/aboutBeancount/aboutAttribution`（中英各一份）。
+- 手册：原始项目与致谢放在 `docs/content/docs/index.mdx` 与 `index.zh-CN.mdx` 首个 Callout（SuperDaniel-cn + `github.com/SuperDaniel-cn/BeanDesk` + AGPL-3.0），不要移回「关于」页。
+- 本机已替换 `/Applications/BeanDesk.app`（0.3.0，2026-11-28 12:32）；旧包在 `~/.Trash/BeanDesk-before-tray2-2026-11-28.app`。
+- 提交：`60f5ef9 feat(brand): bean app icon, template tray icon, and Beancount-centered About page`（已推送）。
 
 ## 1. 快速启动
 
