@@ -1,77 +1,113 @@
-# BeanDesk · Business Ledger
+# BeanDesk · 经营账本（二次开发版）
 
-BeanDesk is a local-first double-entry bookkeeping desktop application. It requires no cloud accounts or external databases—your ledger and supporting documents stay entirely on your own machine. Powered by AI agents for automated recording and compliance checks, it generates standardized financial statements with multi-destination encrypted backups.
+[![上游项目](https://img.shields.io/badge/upstream-SuperDaniel--cn%2FBeanDesk-6e7681?logo=github)](https://github.com/SuperDaniel-cn/BeanDesk)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
-> **Project positioning**: A local AI tax and accounting copilot — helping small businesses without tax expertise keep their books in order, apply the compliant treatments they are entitled to, and reduce misstatements, filing errors, and the resulting losses.
+> 本地优先的 Beancount 桌面工作台，面向个人、独立创作者与一人公司。
 
-English | [简体中文](README.zh-CN.md)
+简体中文 | [English](README.en.md)
 
-[![Release](https://img.shields.io/github/v/release/SuperDaniel-cn/BeanDesk?color=blue)](https://github.com/SuperDaniel-cn/BeanDesk/releases)
-[![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Sponsor](https://img.shields.io/badge/Sponsor-Payoneer%20%7C%20Crypto-ea4aaa?logo=githubsponsors&logoColor=white)](#sponsorship)
+## 来源与关系
 
-![AI-assisted business analysis](./docs/images/en/hero.png)
+本项目基于 [SuperDaniel-cn/BeanDesk](https://github.com/SuperDaniel-cn/BeanDesk) 二次开发。
 
-## Minimal Daily Workflow
+- 原作者：**SuperDaniel-cn**
+- 原项目许可证：**AGPL-3.0**
+- 本仓库不是原作者官方版本，也不代表原作者
+- 原项目的版权、设计说明与手册章节保留；本分支的修改同样以 **AGPL-3.0** 发布
+- 具体改动范围见 [SECONDARY-DEVELOPMENT.md](./SECONDARY-DEVELOPMENT.md)
 
-1. Install desktop app
-2. Initialize ledger
-3. Connect AI
-4. Log receipts with AI
-5. Review and audit anytime
+## 这个分支主要做了什么
 
-## Core Features
+原项目的本地账本、Fava 报表、凭证、查询和备份能力保持不变。本分支集中补齐三件事：**Windows 支持、报表阅读体验、界面可读性**。
 
-### Trial Balance & Executive Overview
-A single screen summarizing your revenue, expenses, assets, and liabilities. Instantly verifies ledger balance with flexible time filtering by year, quarter, or month.
+![BeanDesk 总览：试算平衡表与经营数据](./docs/images/readme/overview.png)
 
-![Trial Balance](./docs/images/en/trial-balance.png)
+### Windows x64 支持
 
-### Standard Financial Statements
-Instant balance sheet, income statement, and cash flow statement, offering a clear view of business performance and cash movements.
+- macOS 与 Windows 双平台
+- Windows 使用 NSIS 安装包，支持托盘、单实例、无控制台启动
+- 处理盘符、UNC 路径和 Windows 子进程生命周期
+- CI 在 Windows 上构建安装包，并做静默安装与内置引擎校验
 
-![Balance Sheet](./docs/images/en/balance-sheet.png)
-![Income Statement](./docs/images/en/income-statement.png)
-![Cash Flow Statement](./docs/images/en/cash-flow.png)
+### 报表阅读体验
 
-### Document Audit Trail & Receipt Verification
-Click any transaction in the journal to inspect attached invoices and bank receipts directly, maintaining a verifiable evidentiary trail.
+- 资产负债表改为两栏布局，右栏集中展示资产构成与负债构成
+- 利润表、现金流量表增加 KPI 摘要
+- 试算平衡表支持中文、全拼、首字母搜索，以及展开/收起
+- 四张报表统一为一致的卡片与摘要样式
+- 完善上期对比和期间切换后的数据表现
 
-![Interactive Journal & Document Audit Trail](./docs/images/en/journal.png)
+![利润表：KPI 摘要与上期对比](./docs/images/readme/income.png)
 
-### Custom Queries & AI Analysis
-Filter, inspect, and export transaction data to CSV. Use built-in financial query templates or prompt AI agents to extract specific operational metrics.
+### 图表与投资组合
 
-![BQL Query Console](./docs/images/en/query.png)
+- 新增图表页：净值、现金流、储蓄率、构成、收款方
+- 资产配置支持“资产类别 / 分组 / 账户”三种维度
+- 投资组合支持目标占比与快速选择
+- 分类颜色保持稳定，补充空态、失败态、未折算汇率提示
+- 图表明细支持键盘读取
 
-### Zero Configuration & Data Security
-- Ready out of the box: Self-contained runtime requiring no external dependencies; reports refresh automatically as your ledger updates.
-- Data sovereignty: No centralized servers; your ledger files and receipts remain strictly on your local machine.
-- Local snapshots and encrypted incremental backups: Automatic local version snapshots, plus encrypted incremental backups to local drives or S3-compatible storage.
+![图表页：净值走势、资产配置与支出结构](./docs/images/readme/charts.png)
 
-![Desktop Settings & Backup Management](./docs/images/en/settings.png)
+### 期间、金额与空态
 
-## Quick Start
+- 年、季度、月度与自定义日期区间
+- 先选期间、再应用；支持一键清除
+- 区分“真零”“无数据”“缺汇率”，不把失败当成 0
+- 加密货币按单位保留精度
+- 金额展示与 CSV 导出保持一致
 
-Download the installer for your operating system from the [Releases](https://github.com/SuperDaniel-cn/BeanDesk/releases) page:
+### 可读性与无障碍
 
-- macOS: Apple Silicon (.dmg) and Intel (.dmg)
-- Windows: 64-bit installer (.exe)
-- Linux: x86_64 and ARM64 packages (.deb / .AppImage)
+- 暖白画布、高彩度数据色，避免发灰、发土
+- 舒适 / 紧凑两档界面密度
+- 支持 70%–250% 显示缩放，含快捷键
+- 期间弹窗焦点锁定、减少动效、图表对比度修正
+- 中文账户名与原始账户路径可切换显示
 
-After launching the app:
-1. New ledger: Select a folder to initialize a standard ledger structure with one click
-2. Existing ledger: Select your existing ledger directory to open directly
-3. Remote connection: Enter the URL of an existing accounting service to connect directly
+### 品牌、文档与工程
 
-## Sponsorship
+- “豆与账线”应用图标、托盘图标与关于页
+- 原作者与原始项目地址放在手册最显眼的位置
+- 中英文手册与二次开发说明
+- Web 196 项、Rust 153 项单元测试
+- macOS / Windows CI；报表页、设置页按需加载
 
-BeanDesk is completely free and open source. If it saves you time or helps your business, sponsorship is greatly appreciated:
+## 原项目已有、本分支保留
 
-- Payoneer (Credit card, debit card, multi-currency): [Sponsor via Payoneer](https://link.payoneer.com/Token?t=D6ADDF769F5F4EE7B8F8F188A32AE50C&src=pl)
-- USDC (Solana): `CiZxojzWpKwXqxqbQQ8gN6Qb4pdGSuKzYA9MbX8ukFKK`
-- USDC (Base / Arbitrum / Ethereum): `0x43ad55b5fe79d1d8afee3425a6011cfb9a512927`
+本地 Beancount / Fava 工作流、凭证预览、BQL 查询与 CSV 导出、本地 MCP、Git 快照与 restic 加密备份等能力，均来自原项目并继续保留，不是本次新增。
 
-## License
+本分支不做云同步、不做在线协作，账本仍然是本地 Beancount 文件。
 
-Licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE).
+## 适合谁
+
+- 希望账本数据留在本机、不依赖云端账号的人
+- 使用 Beancount 管理个人或一人公司账目的人
+- 需要比纯文本账本更直观的报表、图表与期间对比的人
+
+## 快速开始
+
+当前开发版版本为 **0.3.0**。正式安装包将在本仓库的 Releases 页面提供。
+
+源码运行：
+
+```bash
+git clone https://github.com/moc2216/BeanDesk.git
+cd BeanDesk
+make install
+make desktop
+```
+
+运行检查：
+
+```bash
+make test
+```
+
+## 文档与许可
+
+- 使用手册：[docs/content/docs](./docs/content/docs)
+- 二次开发说明：[SECONDARY-DEVELOPMENT.md](./SECONDARY-DEVELOPMENT.md)
+- 版权与归属：[NOTICE](./NOTICE)
+- 许可证：[AGPL-3.0](./LICENSE)
