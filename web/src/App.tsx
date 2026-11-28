@@ -6,6 +6,7 @@ import { AppUpdate } from '@/components/app-update'
 import { DesktopGuard, DesktopProvider } from '@/components/desktop-gate'
 import { KeptReports } from '@/components/kept-reports'
 import { Toaster } from '@/components/ui/sonner'
+import { UiZoomController } from '@/components/ui-zoom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/components/theme-provider'
 import { WarmMainWindow } from '@/components/warm-main-window'
@@ -31,6 +32,7 @@ export default function App() {
         <I18nProvider>
           <AccountDisplayProvider>
           <WarmMainWindow />
+          <UiZoomController />
           <AppUpdate>
           <TimeFilterProvider>
             <TooltipProvider>

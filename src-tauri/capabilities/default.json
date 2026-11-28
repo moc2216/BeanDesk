@@ -24,6 +24,7 @@
     "allow-upgrade-ledger",
     "allow-list-ledger-packs",
     "allow-start-if-enabled",
+    "allow-set-ui-zoom",
     "allow-read-user-text-file",
     "allow-mcp-host-config",
     "allow-system-locales",

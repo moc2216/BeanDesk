@@ -17,6 +17,7 @@ fn main() {
             "upgrade_ledger",
             "list_ledger_packs",
             "start_if_enabled",
+            "set_ui_zoom",
             "read_user_text_file",
             "mcp_host_config",
             "system_locales",

@@ -31,6 +31,14 @@
 - 本机已替换 `/Applications/BeanDesk.app`（0.3.0，2026-11-28 12:32）；旧包在 `~/.Trash/BeanDesk-before-tray2-2026-11-28.app`。
 - 提交：`60f5ef9 feat(brand): bean app icon, template tray icon, and Beancount-centered About page`（已推送）。
 
+## 0.3 显示缩放（2026-11-28）
+
+- 范围 70%–250%，步进 10%，默认 100%；快捷键 `Cmd/Ctrl +`、`-`、`0`，菜单栏「显示 → 放大/缩小/实际大小」。
+- 实现：Rust `UiZoom` 状态 + `set_ui_zoom` 命令，对全部 webview 调 `set_zoom`；手册窗口在 `on_page_load` 自动继承；前端 `web/src/lib/ui-zoom.ts` 负责持久化（`beancount-ui-zoom`）与界面状态，`UiZoomController` 监听菜单事件。
+- **权限坑**：新增命令必须同时写入 `src-tauri/build.rs` 的 `commands` 列表与 `capabilities/default.json` 的 `allow-set-ui-zoom`，否则 invoke 静默失败（表现为菜单能改百分比、界面不动）。
+- 设置 → 常规 → 显示大小 提供 −/+ 与重置；与「界面密度」独立叠加。
+- 已验证：原生菜单/快捷键改到 130%、250% 时导航折叠为汉堡菜单、70% 与 250% 可滚动；`cargo test` 153 项、`bun test` 193 项通过。
+
 ## 1. 快速启动
 
 ```bash

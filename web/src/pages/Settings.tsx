@@ -65,6 +65,14 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useI18n } from '@/i18n'
+import {
+  setUiZoom,
+  stepUiZoom,
+  UI_ZOOM_MAX,
+  UI_ZOOM_MIN,
+  UI_ZOOM_STEP,
+  useUiZoom,
+} from '@/lib/ui-zoom'
 import { openHandbookWindow } from '@/lib/handbook-window'
 import {
   activeConnection,
@@ -136,6 +144,44 @@ function DensityToggle() {
   )
 }
 
+function UiZoomSetting() {
+  const { t } = useI18n()
+  const zoom = useUiZoom()
+  const percent = Math.round(zoom * 100)
+
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <span className={formTitleClass}>{t('settings.uiZoom')}</span>
+      <p className="text-xs text-muted-foreground">{t('settings.uiZoomHint')}</p>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          aria-label={t('settings.uiZoomOut')}
+          disabled={zoom <= UI_ZOOM_MIN}
+          onClick={() => stepUiZoom(-UI_ZOOM_STEP)}
+        >
+          −
+        </Button>
+        <span className="min-w-14 text-center text-sm font-medium tabular-nums">{percent}%</span>
+        <Button
+          size="sm"
+          variant="outline"
+          aria-label={t('settings.uiZoomIn')}
+          disabled={zoom >= UI_ZOOM_MAX}
+          onClick={() => stepUiZoom(UI_ZOOM_STEP)}
+        >
+          +
+        </Button>
+        <Button size="sm" variant="ghost" disabled={zoom === 1} onClick={() => setUiZoom(1)}>
+          {t('settings.uiZoomReset')}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">{t('settings.uiZoomShortcut')}</p>
+    </div>
+  )
+}
+
 function GeneralSettings({ tauri }: { tauri: boolean }) {
   const { t } = useI18n()
 
@@ -156,6 +202,8 @@ function GeneralSettings({ tauri }: { tauri: boolean }) {
         <p className="text-xs text-muted-foreground">{t('settings.densityHint')}</p>
         <DensityToggle />
       </div>
+      <Separator />
+      <UiZoomSetting />
       {tauri ? (
         <>
           <Separator />

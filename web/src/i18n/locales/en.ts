@@ -384,6 +384,13 @@ export const en = {
     densityHint: 'Compact tightens table rows and card padding so more rows fit on screen.',
     densityComfortable: 'Comfortable',
     densityCompact: 'Compact',
+    uiZoom: 'Display size',
+    uiZoomHint:
+      'Scales the whole interface, including tables and charts. The handbook window follows the same setting.',
+    uiZoomIn: 'Zoom in',
+    uiZoomOut: 'Zoom out',
+    uiZoomReset: 'Reset',
+    uiZoomShortcut: 'Shortcuts: Cmd/Ctrl +, Cmd/Ctrl −, Cmd/Ctrl 0. Range 70%–250%.',
     aboutBlurb:
       'A local-first double-entry workbench for Beancount plain-text ledgers: reports, charts, journal, backups and MCP, with every ledger file kept on your machine.',
     aboutBeancountTitle: 'Beancount',

@@ -386,6 +386,12 @@ export const zhCN = {
     densityHint: '紧凑模式会收紧表格行高与卡片内边距，一屏显示更多行。',
     densityComfortable: '舒适',
     densityCompact: '紧凑',
+    uiZoom: '显示大小',
+    uiZoomHint: '整体缩放界面，文字、表格和图表一起放大；手册窗口同步。',
+    uiZoomIn: '放大',
+    uiZoomOut: '缩小',
+    uiZoomReset: '重置',
+    uiZoomShortcut: '快捷键：⌘+ / ⌘− / ⌘0（Windows 用 Ctrl），范围 70%–250%。',
     aboutBlurb:
       '面向 Beancount 纯文本账本的本地优先复式记账工作台：报表、图表、日记账、备份与 MCP，账本和凭证始终留在本机。',
     aboutBeancountTitle: 'Beancount',

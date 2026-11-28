@@ -4,6 +4,8 @@ mod engine;
 mod ledger_init;
 mod ledger_preset;
 mod mcp;
+#[cfg(desktop)]
+mod menu;
 mod policy_integrity;
 mod process;
 mod supervisor;
@@ -51,6 +53,24 @@ struct FavaHost {
     supervisor: Mutex<Supervisor>,
 }
 
+struct UiZoom(Mutex<f64>);
+
+impl Default for UiZoom {
+    fn default() -> Self {
+        Self(Mutex::new(1.0))
+    }
+}
+
+const UI_ZOOM_MIN: f64 = 0.7;
+const UI_ZOOM_MAX: f64 = 2.5;
+
+fn clamp_ui_zoom(scale: f64) -> f64 {
+    if !scale.is_finite() {
+        return 1.0;
+    }
+    scale.clamp(UI_ZOOM_MIN, UI_ZOOM_MAX)
+}
+
 #[derive(serde::Deserialize)]
 struct SavedLocal {
     directory: String,
@@ -94,9 +114,20 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_log::Builder::new().skip_logger().build())
         .plugin(tauri_plugin_process::init())
+        .on_menu_event(|app, event| {
+            let action = match event.id().as_ref() {
+                "ui_zoom_in" => "in",
+                "ui_zoom_out" => "out",
+                "ui_zoom_reset" => "reset",
+                _ => return,
+            };
+            let _ = app.emit("ui-zoom", action);
+        })
         .setup(|app| {
             connection_log::install(app.handle())?;
             backup::start_if_enabled(app.handle());
+            #[cfg(desktop)]
+            menu::install(app.handle(), &system_locales())?;
             #[cfg(desktop)]
             tray::install(app.handle(), &system_locales())?;
             reveal_main_if_still_hidden(app.handle().clone());
@@ -105,6 +136,11 @@ pub fn run() {
         .on_page_load(|webview, payload| {
             if payload.event() != PageLoadEvent::Finished {
                 return;
+            }
+            if let Some(state) = webview.app_handle().try_state::<UiZoom>() {
+                if let Ok(scale) = state.0.lock() {
+                    let _ = webview.set_zoom(*scale);
+                }
             }
             if webview.label() == HANDBOOK_WINDOW {
                 let _ = webview.eval(HANDBOOK_CLOSE_SCRIPT);
@@ -115,7 +151,9 @@ pub fn run() {
             supervisor: Mutex::new(Supervisor::default()),
         })
         .manage(backup::BackupHost::default())
+        .manage(UiZoom::default())
         .invoke_handler(tauri::generate_handler![
+            set_ui_zoom,
             start_saved_fava,
             stop_saved_fava,
             fava_host,
@@ -405,6 +443,17 @@ fn system_locales() -> Vec<String> {
         .collect()
 }
 
+/// Zoom every webview together so the main window and the handbook stay in sync.
+#[tauri::command]
+fn set_ui_zoom(app: AppHandle, scale: f64, state: State<'_, UiZoom>) -> Result<(), String> {
+    let scale = clamp_ui_zoom(scale);
+    *state.0.lock().map_err(|error| error.to_string())? = scale;
+    for (_, window) in app.webview_windows() {
+        let _ = window.set_zoom(scale);
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn open_url(url: String) -> Result<(), String> {
     open_external_url(&url)
@@ -487,9 +536,17 @@ fn open_windows_url(url: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        bundled_launch, directory_from_connection, http_url_allowed, local_project,
+        bundled_launch, clamp_ui_zoom, directory_from_connection, http_url_allowed, local_project,
         open_external_url, require_main_bean,
     };
+
+    #[test]
+    fn ui_zoom_stays_inside_the_supported_range() {
+        assert_eq!(clamp_ui_zoom(0.2), 0.7);
+        assert_eq!(clamp_ui_zoom(9.0), 2.5);
+        assert_eq!(clamp_ui_zoom(1.25), 1.25);
+        assert_eq!(clamp_ui_zoom(f64::NAN), 1.0);
+    }
 
     #[test]
     fn reads_the_active_local_project() {
