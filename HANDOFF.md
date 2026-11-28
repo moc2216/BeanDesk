@@ -7,7 +7,7 @@
 
 基于原作者 BeanDesk（AGPL-3.0）的二次扩展，已完成设计体系、会计期间、图表可读性、金额精度、密度、无障碍、品牌图标与开源说明；版本 `0.3.0`；已关闭自动更新（无 endpoint、无签名）；`identifier` 保留 `app.beandesk.desktop`。当前开发分支 `ui/report-refine-2026-11-28`，`main` 未合并；最新提交见 `git log -1`。
 
-- 远程：`moc2216/BeanDesk`（私有，待转公开）；`origin` 指向它，`upstream` 指向上游。
+- 远程：`moc2216/BeanDesk` 已是`SuperDaniel-cn/BeanDesk`的官方 fork（公开）；`origin` 指向它，`upstream` 指向上游；旧独立仓库归档为 `moc2216/BeanDesk-standalone-2026-11-29`。
 
 ## 0.1 版本快照与回滚（2026-11-28）
 
@@ -126,3 +126,12 @@ make docs-sync           # 手册导出到 web/public/docs
 - Mac 安装：2026-11-29 00:07 已替换 `/Applications/BeanDesk.app`（0.3.0，pid 55621），旧包在 `~/.Trash/BeanDesk-old-2026-11-29.app`；窗口标题「经营账本」正常。
 - 仍有：41 条 lint warning（0 error）、未签名安装包、依赖补丁未升级、Windows 实机托盘/单实例/焦点/备份恢复/卸载验收。
 - 恢复开发先读：本文件、`design-review/WINDOWS-PORT.md`、`DEVELOPMENT-OPTIMIZATION-PLAN.md`。
+
+## 10. 2026-11-29 官方 fork
+
+- `moc2216/BeanDesk` 已由 GitHub 官方 fork 自 `SuperDaniel-cn/BeanDesk`；API `fork: true`，页面显示 `forked from SuperDaniel-cn/BeanDesk`。
+- 旧独立仓库改名为 `moc2216/BeanDesk-standalone-2026-11-29` 并归档；原 closed PR #1 留在该归档仓库。
+- fork 默认分支 `main` 已指向当前 UI HEAD `fe4a45e`；`ui/report-refine-2026-11-28` 保留；tag `snapshot/design-2026-11-28` 已推送。
+- README：`README.md` 中文主页（含三张合成账本截图）、`README.en.md` 英文版、`README.zh-CN.md` 为跳转页；原 Release 徽章和赞助地址已移除。
+- fork CI：`46165658690` 的 web/docs/rust/windows 全绿。
+- 本地 `origin` 指向新 fork，`upstream` 仍指向原作者仓库。
