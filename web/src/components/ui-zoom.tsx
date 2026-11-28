@@ -26,7 +26,12 @@ export function UiZoomController() {
     let stop: (() => void) | undefined
     let disposed = false
 
-    if (isTauri()) {
+    // macOS/Linux use the native menu accelerators. Windows has no native
+    // menu bar, so handle the same shortcuts in the webview.
+    const isWindows = navigator.userAgent.includes('Windows')
+    const usesNativeMenu = isTauri() && !isWindows
+
+    if (usesNativeMenu) {
       void listen<string>('ui-zoom', (event) => {
         if (event.payload === 'in') stepUiZoom(UI_ZOOM_STEP)
         else if (event.payload === 'out') stepUiZoom(-UI_ZOOM_STEP)

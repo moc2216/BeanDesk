@@ -4,7 +4,7 @@ mod engine;
 mod ledger_init;
 mod ledger_preset;
 mod mcp;
-#[cfg(desktop)]
+#[cfg(all(desktop, not(target_os = "windows")))]
 mod menu;
 mod policy_integrity;
 mod process;
@@ -126,7 +126,10 @@ pub fn run() {
         .setup(|app| {
             connection_log::install(app.handle())?;
             backup::start_if_enabled(app.handle());
-            #[cfg(desktop)]
+            // Windows draws the native menu bar inside the window, which clashes
+            // with the app header. Keep the menu on macOS/Linux and use the webview
+            // shortcuts on Windows instead.
+            #[cfg(all(desktop, not(target_os = "windows")))]
             menu::install(app.handle(), &system_locales())?;
             #[cfg(desktop)]
             tray::install(app.handle(), &system_locales())?;
