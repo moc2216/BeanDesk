@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import { ChevronDown, Settings2, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -70,7 +70,7 @@ export function PortfolioView() {
     .sort((a, b) => Math.abs(b.gap ?? 0) - Math.abs(a.gap ?? 0))
   const toAdjust = gaps.reduce((sum, row) => sum + Math.max(0, row.gap ?? 0), 0)
 
-  const option = useMemo<echarts.EChartsOption>(() => {
+  const option = useMemo<EChartsOption>(() => {
     const data = rows.map((row, index) => ({
       name: row.name,
       value: row.value,

@@ -4,6 +4,7 @@ import { useTheme } from '@/components/theme-provider'
 import { useI18n } from '@/i18n'
 import { warmAndRevealMainWindow } from '@/lib/desktop-shell'
 import { setHandbookWindowTitle } from '@/lib/handbook-window'
+import { logStartup } from '@/lib/startup-timing'
 
 /** Hide main until the themed shell and handbook window are in memory. */
 export function WarmMainWindow() {
@@ -15,7 +16,10 @@ export function WarmMainWindow() {
     void (async () => {
       await warmAndRevealMainWindow(title, locale, isDark ? 'dark' : 'light')
       if (cancelled) return
+      logStartup('shell')
       await setHandbookWindowTitle(title)
+      if (cancelled) return
+      logStartup('handbook')
     })().catch(() => undefined)
     return () => {
       cancelled = true

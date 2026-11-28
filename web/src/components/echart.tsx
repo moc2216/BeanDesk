@@ -1,9 +1,11 @@
-import * as echarts from 'echarts'
+import type { ECharts, EChartsOption } from 'echarts'
 import { useEffect, useRef } from 'react'
 
-export function useChart(option: echarts.EChartsOption) {
+import { echarts } from '@/lib/echarts'
+
+export function useChart(option: EChartsOption) {
   const host = useRef<HTMLDivElement>(null)
-  const chart = useRef<echarts.ECharts | null>(null)
+  const chart = useRef<ECharts | null>(null)
   useEffect(() => {
     if (!host.current) return
     chart.current = echarts.init(host.current, undefined, { renderer: 'canvas' })
@@ -21,7 +23,7 @@ export function useChart(option: echarts.EChartsOption) {
   return host
 }
 
-export function Chart({ option, height = 260 }: { option: echarts.EChartsOption; height?: number }) {
+export function Chart({ option, height = 260 }: { option: EChartsOption; height?: number }) {
   const host = useChart(option)
   return <div ref={host} className="w-full" style={{ height }} />
 }

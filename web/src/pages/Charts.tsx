@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import { Settings2, TriangleAlertIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -125,7 +125,7 @@ function Pie({ items, top, label, currency }: { items: Array<{ name: string; val
   const labelColor = isDark ? '#c4c4cc' : '#52525b'
   const strongColor = isDark ? '#f4f4f5' : '#18181b'
   const pieTotal = items.reduce((sum, item) => sum + item.value, 0)
-  const option = useMemo<echarts.EChartsOption>(
+  const option = useMemo<EChartsOption>(
     () => ({
       color: PALETTE,
       tooltip: {
@@ -185,7 +185,7 @@ function Treemap({ nodes, currency }: { nodes: AccountNode[]; currency: string }
       })),
     }
   })
-  const option = useMemo<echarts.EChartsOption>(
+  const option = useMemo<EChartsOption>(
     () => ({
       color: PALETTE,
       tooltip: {
@@ -305,7 +305,7 @@ export function Charts() {
   const axisX = (data: string[]) => categoryAxis(data, isDark)
   const axisY = (formatter: (value: number) => string) => valueAxis(formatter, isDark)
 
-  const flowsOption = useMemo<echarts.EChartsOption>(
+  const flowsOption = useMemo<EChartsOption>(
     () => ({
       grid: { left: 88, right: 24, top: 12, bottom: 24 },
       xAxis: { type: 'value', axisLabel: { formatter: (value: number) => formatCurrency(value, currency) } },
@@ -332,7 +332,7 @@ export function Charts() {
   const composition = series.data?.composition
   const payees = series.data?.payees ?? []
 
-  const netWorthOption = useMemo<echarts.EChartsOption>(
+  const netWorthOption = useMemo<EChartsOption>(
     () => ({
       grid: { left: 68, right: 20, top: 16, bottom: 24 },
       tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
@@ -359,7 +359,7 @@ export function Charts() {
     [netWorth, currency, formatCurrency, t, compact],
   )
 
-  const cashflowOption = useMemo<echarts.EChartsOption>(
+  const cashflowOption = useMemo<EChartsOption>(
     () => ({
       grid: { left: 68, right: 20, top: 36, bottom: 24 },
       legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11 } },
@@ -396,7 +396,7 @@ export function Charts() {
     [cashflow, currency, t, compact],
   )
 
-  const savingsOption = useMemo<echarts.EChartsOption>(
+  const savingsOption = useMemo<EChartsOption>(
     () => ({
       grid: { left: 48, right: 20, top: 16, bottom: 24 },
       tooltip: {
@@ -426,7 +426,7 @@ export function Charts() {
     [savings, compact],
   )
 
-  const compositionOption = useMemo<echarts.EChartsOption>(
+  const compositionOption = useMemo<EChartsOption>(
     () => ({
       color: PALETTE,
       grid: { left: 68, right: 20, top: 52, bottom: 24 },
@@ -456,7 +456,7 @@ export function Charts() {
     [composition, currency, compact, formatAccount, t],
   )
 
-  const payeeOption = useMemo<echarts.EChartsOption>(
+  const payeeOption = useMemo<EChartsOption>(
     () => ({
       grid: { left: 100, right: 36, top: 8, bottom: 24 },
       tooltip: { ...tooltipStyle, trigger: 'axis', valueFormatter: (value) => money(Number(value)) },
