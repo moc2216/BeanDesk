@@ -122,6 +122,7 @@ make docs-sync           # 手册导出到 web/public/docs
 - Windows 回归测试数据：`/Users/salt/Desktop/BeanDesk-Windows-TestData.zip`；合成账本 2025-01 至 2026-11，CNY/USD/HKD、投资/房产/贷款/信用卡/税费；`bean-check` 与内置引擎均 0 错误。
 - Windows 修复：移除 Windows 原生菜单栏（File/Edit/View/Window/Help）；托盘改用彩色豆；`Ctrl +/-/0` 由前端快捷键处理。
 - 性能优化：报表页与 Settings 懒加载；ECharts 改为 `echarts/core` 按需注册（Charts chunk 1.15 MB → 664 KB）；拼音搜索改为聚焦搜索框时才加载（TrialBalance chunk 296 KB → 9.5 KB）；首屏脚本实测约 703 KB（原 2.29 MB）。
-- 启动日志：`[startup] bundle/shell/handbook`，从导航开始计时，写入控制台与 `BeanDesk.log`；等待实机采集后再决定是否继续优化。
+- 启动日志：`[startup] bundle/shell/handbook`，从导航开始计时，写入控制台与 `BeanDesk.log`；Mac 实测 2026-11-29 00:07：bundle 23ms、shell 197ms、handbook 199ms；Windows 待采集。
+- Mac 安装：2026-11-29 00:07 已替换 `/Applications/BeanDesk.app`（0.3.0，pid 55621），旧包在 `~/.Trash/BeanDesk-old-2026-11-29.app`；窗口标题「经营账本」正常。
 - 仍有：41 条 lint warning（0 error）、未签名安装包、依赖补丁未升级、Windows 实机托盘/单实例/焦点/备份恢复/卸载验收。
 - 恢复开发先读：本文件、`design-review/WINDOWS-PORT.md`、`DEVELOPMENT-OPTIMIZATION-PLAN.md`。
