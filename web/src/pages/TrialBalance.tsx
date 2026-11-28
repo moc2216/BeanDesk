@@ -9,7 +9,7 @@ import {
   Search,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router'
 
 import { ReportBar, ReportDay, ReportWhen } from '@/components/report-bar'
@@ -36,7 +36,12 @@ import { fetchTrialBalance, type AccountNode, type TrialBalanceSection } from '@
 import { exportStatementCsv } from '@/lib/csv'
 import { explainFavaError } from '@/lib/fava-error'
 import { useAccountDisplay } from '@/lib/account-display'
-import { accountHaystack } from '@/lib/account-search'
+import {
+  accountHaystack,
+  accountSearchReady,
+  loadAccountSearch,
+  subscribeAccountSearch,
+} from '@/lib/account-search'
 import { isDebitNormal, splitSignedBalance, visibleAccount, type TrialBalanceRoot } from '@/lib/ledger-model'
 import { formatPeriodLabel } from '@/lib/period-label'
 import { useShownTime } from '@/lib/shown-time'
@@ -344,6 +349,15 @@ export function TrialBalance() {
   const { timeFilter } = useTimeFilter()
   const [searchTerm, setSearchTerm] = useState('')
   const [expanded, setExpanded] = useState<Set<string> | null>(null)
+  const searchReady = useSyncExternalStore(
+    subscribeAccountSearch,
+    accountSearchReady,
+    () => false,
+  )
+
+  useEffect(() => {
+    if (searchTerm.trim()) void loadAccountSearch().catch(() => undefined)
+  }, [searchTerm])
 
   const query = useQuery({
     queryKey: ['trial-balance', timeFilter],
@@ -404,6 +418,8 @@ export function TrialBalance() {
               <InputGroupInput
                 placeholder={t('trialBalance.searchPlaceholder')}
                 value={searchTerm}
+                aria-busy={searchTerm.trim() !== '' && !searchReady}
+                onFocus={() => void loadAccountSearch().catch(() => undefined)}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </InputGroup>

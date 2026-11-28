@@ -1,8 +1,16 @@
-import { describe, expect, test } from 'bun:test'
+import { beforeAll, describe, expect, test } from 'bun:test'
 
-import { accountHaystack } from './account-search'
+import { accountHaystack, accountSearchReady, loadAccountSearch } from './account-search'
 
 describe('accountHaystack', () => {
+  beforeAll(async () => {
+    await loadAccountSearch()
+  })
+
+  test('loads pinyin search on demand', () => {
+    expect(accountSearchReady()).toBe(true)
+  })
+
   test('keeps the raw path and the leaf name searchable', () => {
     const haystack = accountHaystack('Assets:Bank-银行存款:CMB-招商储蓄', '招商储蓄')
     expect(haystack).toContain('assets:bank-银行存款:cmb-招商储蓄')
